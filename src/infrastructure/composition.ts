@@ -3,6 +3,7 @@ import type { Clock } from "@/application/ports/clock";
 import type { AccessRepository } from "@/application/ports/access-repository";
 import type { AuthSessionService } from "@/application/ports/auth-session";
 import type { IdentityProvider } from "@/application/ports/identity";
+import type { WorkspaceRepository } from "@/application/ports/workspace-repository";
 import type { Logger } from "@/application/ports/logger";
 import { SECRET_VARIABLES } from "@/config/env-schema";
 import {
@@ -17,6 +18,7 @@ import { AppError } from "@/domain/errors/app-error";
 import { createSupabaseAccessRepository } from "@/infrastructure/supabase/supabase-access-repository";
 import { createSupabaseAuthSession } from "@/infrastructure/supabase/supabase-auth-session";
 import { createSupabaseIdentityProvider } from "@/infrastructure/supabase/supabase-identity";
+import { createSupabaseWorkspaceRepository } from "@/infrastructure/supabase/supabase-workspace-repository";
 import { createLogger, type LogLevel } from "@/infrastructure/logging/logger";
 
 const FALLBACK_LOG_LEVEL: LogLevel = "info";
@@ -24,7 +26,7 @@ const LOG_LEVEL_VALUES: readonly string[] = ["debug", "info", "warn", "error"];
 
 function createSupabaseAdapters(
   config: AppConfig,
-): Pick<Container, "identity" | "access" | "session"> {
+): Pick<Container, "identity" | "access" | "session" | "workspaces"> {
   const settings = {
     url: config.supabase.url,
     publishableKey: config.supabase.publishableKey,
@@ -35,6 +37,7 @@ function createSupabaseAdapters(
     identity: createSupabaseIdentityProvider(settings),
     access: createSupabaseAccessRepository(settings),
     session: createSupabaseAuthSession(settings),
+    workspaces: createSupabaseWorkspaceRepository(settings),
   };
 }
 
@@ -47,16 +50,19 @@ export interface Container {
   identity: IdentityProvider;
   access: AccessRepository;
   session: AuthSessionService;
+  workspaces: WorkspaceRepository;
 }
 
-export type AdapterOverrides = Partial<Pick<Container, "identity" | "access" | "session">>;
+export type AdapterOverrides = Partial<
+  Pick<Container, "identity" | "access" | "session" | "workspaces">
+>;
 
 const unavailable = (): never => {
   throw new AppError("DEPENDENCY_UNAVAILABLE", "The service is temporarily unavailable.");
 };
 
 /** Used when configuration is invalid: every call fails safely instead of reaching a provider. */
-const unavailableAdapters: Pick<Container, "identity" | "access" | "session"> = {
+const unavailableAdapters: Pick<Container, "identity" | "access" | "session" | "workspaces"> = {
   identity: { getIdentity: async () => unavailable() },
   access: {
     getAccount: async () => unavailable(),
@@ -64,6 +70,17 @@ const unavailableAdapters: Pick<Container, "identity" | "access" | "session"> = 
     ensureAccount: async () => unavailable(),
     listAccounts: async () => unavailable(),
     review: async () => unavailable(),
+  },
+  workspaces: {
+    getMembership: async () => unavailable(),
+    findOwnWorkspace: async () => unavailable(),
+    createInitialWorkspace: async () => unavailable(),
+    getWorkspace: async () => unavailable(),
+    listBrands: async () => unavailable(),
+    getBrand: async () => unavailable(),
+    countActiveBrands: async () => unavailable(),
+    createBrand: async () => unavailable(),
+    updateBrand: async () => unavailable(),
   },
   session: {
     startGoogleSignIn: async () => unavailable(),
@@ -105,6 +122,7 @@ export function createContainer(env: EnvSource, overrides: AdapterOverrides = {}
     identity: overrides.identity ?? adapters.identity,
     access: overrides.access ?? adapters.access,
     session: overrides.session ?? adapters.session,
+    workspaces: overrides.workspaces ?? adapters.workspaces,
     clock: systemClock,
     // Feature 02+ register database/auth probes here; none exist at foundation.
     readinessChecks: [{ name: "config", check: async () => config.ok }],

@@ -5,6 +5,13 @@ import type {
 } from "@/application/ports/access-repository";
 import type { AuthSessionService } from "@/application/ports/auth-session";
 import type { Identity, IdentityProvider } from "@/application/ports/identity";
+import type {
+  BrandPatch,
+  BrandRecord,
+  WorkspaceRecord,
+  WorkspaceRepository,
+} from "@/application/ports/workspace-repository";
+import type { WorkspaceMembership } from "@/domain/access/access-policy";
 import { nextAccountStatus, type AccountStatus } from "@/domain/access/account-status";
 import { AppError } from "@/domain/errors/app-error";
 import {
@@ -82,6 +89,120 @@ export class FakeIdentity implements IdentityProvider {
   }
 }
 
+/**
+ * In-memory workspaces that, like row-level security, only ever reveal the signed-in user's own
+ * rows. Application-level isolation is tested here; real RLS is tested in tests/db.
+ */
+export class FakeWorkspaces implements WorkspaceRepository {
+  workspaces = new Map<string, WorkspaceRecord & { ownerId: string }>();
+  members: Array<{
+    workspaceId: string;
+    userId: string;
+    role: "owner" | "member";
+    revoked: boolean;
+  }> = [];
+  brands = new Map<string, BrandRecord>();
+  private seq = 0;
+  constructor(private readonly identity: FakeIdentity) {}
+
+  private get me(): string {
+    const id = this.identity.current?.userId;
+    if (!id) throw new AppError("FORBIDDEN", "no session");
+    return id;
+  }
+  private visible(workspaceId: string): boolean {
+    return this.members.some(
+      (m) => m.workspaceId === workspaceId && m.userId === this.me && !m.revoked,
+    );
+  }
+  private nextId(): string {
+    this.seq += 1;
+    return `00000000-0000-4000-8000-${String(this.seq).padStart(12, "0")}`;
+  }
+
+  async getMembership(userId: string, workspaceId: string): Promise<WorkspaceMembership | null> {
+    const row = this.members.find((m) => m.workspaceId === workspaceId && m.userId === userId);
+    // Like RLS, a revoked membership is invisible to the member.
+    return row && !row.revoked ? { workspaceId, role: row.role, revoked: false } : null;
+  }
+  async findOwnWorkspace() {
+    const mine = [...this.workspaces.values()].find((w) => this.visible(w.id));
+    return mine ? { id: mine.id, name: mine.name, createdAt: mine.createdAt } : null;
+  }
+  async createInitialWorkspace(name: string) {
+    const existing = [...this.workspaces.values()].find((w) => w.ownerId === this.me);
+    if (existing) return existing.id;
+    const id = this.nextId();
+    this.workspaces.set(id, { id, name, createdAt: "2026-01-01T00:00:00.000Z", ownerId: this.me });
+    this.members.push({ workspaceId: id, userId: this.me, role: "owner", revoked: false });
+    return id;
+  }
+  async getWorkspace(workspaceId: string) {
+    const w = this.workspaces.get(workspaceId);
+    return w && this.visible(workspaceId)
+      ? { id: w.id, name: w.name, createdAt: w.createdAt }
+      : null;
+  }
+  async listBrands(workspaceId: string, query: { includeArchived: boolean; limit: number }) {
+    const items = [...this.brands.values()].filter(
+      (b) =>
+        b.workspaceId === workspaceId &&
+        this.visible(workspaceId) &&
+        (query.includeArchived || !b.archivedAt),
+    );
+    return { items: items.slice(0, query.limit), nextCursor: null };
+  }
+  async getBrand(workspaceId: string, brandId: string) {
+    const b = this.brands.get(brandId);
+    return b && b.workspaceId === workspaceId && this.visible(workspaceId) ? b : null;
+  }
+  async countActiveBrands(workspaceId: string) {
+    return [...this.brands.values()].filter((b) => b.workspaceId === workspaceId && !b.archivedAt)
+      .length;
+  }
+  async createBrand(
+    workspaceId: string,
+    input: { name: string; profile: Record<string, unknown>; targets: Record<string, unknown> },
+  ) {
+    if (!this.visible(workspaceId)) throw new AppError("FORBIDDEN", "rls");
+    const dupe = [...this.brands.values()].some(
+      (b) =>
+        b.workspaceId === workspaceId &&
+        !b.archivedAt &&
+        b.name.toLowerCase() === input.name.toLowerCase(),
+    );
+    if (dupe) throw new AppError("CONFLICT", "dup");
+    const id = this.nextId();
+    const brand: BrandRecord = {
+      id,
+      workspaceId,
+      ...input,
+      revision: 1,
+      archivedAt: null,
+      createdAt: "t",
+      updatedAt: "t",
+    };
+    this.brands.set(id, brand);
+    return brand;
+  }
+  async updateBrand(
+    workspaceId: string,
+    brandId: string,
+    expectedRevision: number,
+    patch: BrandPatch,
+  ) {
+    const brand = await this.getBrand(workspaceId, brandId);
+    if (!brand) throw new AppError("NOT_FOUND", "nf");
+    if (brand.revision !== expectedRevision) throw new AppError("CONFLICT", "stale");
+    if (patch.name !== undefined) brand.name = patch.name;
+    if (patch.profile !== undefined) brand.profile = patch.profile;
+    if (patch.targets !== undefined) brand.targets = patch.targets;
+    if (patch.archived !== undefined) brand.archivedAt = patch.archived ? "archived" : null;
+    brand.revision += 1;
+    return brand;
+  }
+}
+
 export function fakeSession(overrides: Partial<AuthSessionService> = {}): AuthSessionService {
   return {
     startGoogleSignIn: async () => "https://accounts.example.test/auth",
@@ -96,6 +217,7 @@ export function fakeSession(overrides: Partial<AuthSessionService> = {}): AuthSe
 
 export interface TestWorld {
   container: Container;
+  workspaces: FakeWorkspaces;
   access: FakeAccess;
   identity: FakeIdentity;
 }
@@ -107,10 +229,17 @@ export function makeWorld(
 ): TestWorld {
   const access = new FakeAccess();
   const identity = new FakeIdentity();
+  const workspaces = new FakeWorkspaces(identity);
   access.owners.add(OWNER_ID);
   access.add(OWNER_ID, "approved");
-  const container = createContainer(env, { access, identity, session: fakeSession(), ...extra });
-  return { container, access, identity };
+  const container = createContainer(env, {
+    access,
+    identity,
+    workspaces,
+    session: fakeSession(),
+    ...extra,
+  });
+  return { container, access, identity, workspaces };
 }
 
 export const jsonRequest = (
