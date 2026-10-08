@@ -1,7 +1,7 @@
 import { assertAccess, resolvePrincipal } from "@/application/access/access-use-cases";
 import type { Logger } from "@/application/ports/logger";
 import type { AccessRequirement, Principal } from "@/domain/access/access-policy";
-import { AppError, toErrorEnvelope, type ErrorCode } from "@/domain/errors/app-error";
+import { AppError, isAppError, toErrorEnvelope, type ErrorCode } from "@/domain/errors/app-error";
 import type { Container } from "@/infrastructure/composition";
 
 /**
@@ -135,7 +135,7 @@ export function createRouteHandler<P extends AccessPolicy>(
           logger.warn("access denied", {
             path,
             userId: principal?.userId ?? null,
-            reason: denied instanceof AppError ? denied.details?.reason : undefined,
+            reason: isAppError(denied) ? denied.details?.reason : undefined,
           });
           throw denied;
         }

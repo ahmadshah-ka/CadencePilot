@@ -1,5 +1,6 @@
 import "server-only";
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 import { resolvePrincipal } from "@/application/access/access-use-cases";
 import { evaluateAccess, type Principal } from "@/domain/access/access-policy";
 import { AppError } from "@/domain/errors/app-error";
@@ -23,14 +24,14 @@ export function getAppConfig(): AppConfig {
 }
 
 /** The current principal resolved from fresh database state, or null when signed out. */
-export async function getPrincipal(): Promise<Principal | null> {
+export const getPrincipal = cache(async (): Promise<Principal | null> => {
   const container = getContainer();
   return resolvePrincipal({
     identity: container.identity,
     access: container.access,
     logger: container.logger,
   });
-}
+});
 
 function signInUrl(nextPath: string): string {
   return `${SIGN_IN_PATH}?next=${encodeURIComponent(nextPath)}`;

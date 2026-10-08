@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { reviewAccount } from "@/application/access/access-use-cases";
 import { DECISIONS_REQUIRING_CONFIRMATION, REVIEW_DECISIONS } from "@/domain/access/account-status";
-import { AppError } from "@/domain/errors/app-error";
+import { isAppError } from "@/domain/errors/app-error";
 import { getContainer } from "@/infrastructure/composition";
 import { getAppConfig, getPrincipal, SIGN_IN_PATH } from "@/presentation/auth/page-guards";
 
@@ -46,16 +46,15 @@ export async function reviewAccountAction(formData: FormData): Promise<void> {
       { targetUserId: userId, decision, expectedRevision, note: note || null },
     );
   } catch (error) {
-    if (error instanceof AppError && error.code === "UNAUTHENTICATED") redirect(SIGN_IN_PATH);
-    result =
-      error instanceof AppError
-        ? error.code === "CONFLICT"
-          ? "stale"
-          : error.code === "FORBIDDEN"
-            ? "forbidden"
-            : "error"
-        : "error";
-    container.logger.warn("account review failed", { result });
+    if (isAppError(error) && error.code === "UNAUTHENTICATED") redirect(SIGN_IN_PATH);
+    result = isAppError(error)
+      ? error.code === "CONFLICT"
+        ? "stale"
+        : error.code === "FORBIDDEN"
+          ? "forbidden"
+          : "error"
+      : "error";
+    container.logger.warn("account review failed", { result, error });
   }
   revalidatePath("/admin");
   redirect(`/admin?result=${result}`);

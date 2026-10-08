@@ -1,9 +1,14 @@
 import { redirect } from "next/navigation";
 import { signInWithGoogleAction } from "@/app/actions/auth-actions";
 import { sanitizeNextPath } from "@/domain/access/safe-redirect";
+import { buttonClasses } from "@/presentation/components/ui/button";
+import { CenteredPage } from "@/presentation/components/ui/centered-page";
 import { getPrincipal } from "@/presentation/auth/page-guards";
+import { getProductName } from "@/presentation/site/product-name";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = { title: "Sign in" };
 
 const MESSAGES: Record<string, string> = {
   cancelled: "Sign-in was cancelled. You can try again whenever you are ready.",
@@ -18,30 +23,26 @@ export default async function SignInPage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const { next, error } = await searchParams;
-  if (await getPrincipal()) redirect(sanitizeNextPath(next));
+  if (await getPrincipal().catch(() => null)) redirect(sanitizeNextPath(next));
   const message = error ? MESSAGES[error] : undefined;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 p-6">
-      <h1 className="text-2xl font-semibold">Sign in</h1>
-      <p style={{ color: "var(--color-muted)" }}>
+    <CenteredPage productName={getProductName()}>
+      <h1 className="font-display text-4xl tracking-tight">Sign in</h1>
+      <p className="text-muted">
         Access is by approval. Sign in with Google to request access or continue.
       </p>
       {message ? (
-        <p role="alert" className="rounded-md border p-3">
+        <p role="alert" className="rounded-md border border-danger px-4 py-3 text-sm">
           {message}
         </p>
       ) : null}
       <form action={signInWithGoogleAction}>
         <input type="hidden" name="next" value={sanitizeNextPath(next)} />
-        <button
-          type="submit"
-          className="w-full rounded-md px-4 py-3 font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2"
-          style={{ background: "var(--color-accent)" }}
-        >
+        <button type="submit" className={`${buttonClasses("primary", "lg")} w-full`}>
           Continue with Google
         </button>
       </form>
-    </main>
+    </CenteredPage>
   );
 }

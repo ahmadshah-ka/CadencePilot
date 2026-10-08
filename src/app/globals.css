@@ -1,8 +1,51 @@
 @import "tailwindcss";
 @import "../presentation/styles/tokens.css";
 
-body {
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font-family: var(--font-sans);
+/* Expose design tokens as Tailwind utilities: bg-canvas, text-ink, border-line, font-display... */
+@theme inline {
+  --color-canvas: var(--cp-canvas);
+  --color-surface: var(--cp-surface);
+  --color-sunken: var(--cp-sunken);
+  --color-ink: var(--cp-ink);
+  --color-muted: var(--cp-muted);
+  --color-line: var(--cp-line);
+  --color-accent: var(--cp-accent);
+  --color-accent-strong: var(--cp-accent-strong);
+  --color-on-accent: var(--cp-on-accent);
+  --color-success: var(--cp-success);
+  --color-warning: var(--cp-warning);
+  --color-danger: var(--cp-danger);
+  --font-sans: var(--cp-font-sans);
+  --font-display: var(--cp-font-display);
+  --radius-md: var(--cp-radius-sm);
+  --radius-xl: var(--cp-radius);
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+    scroll-behavior: smooth;
+  }
+  body {
+    background-color: var(--cp-canvas);
+    color: var(--cp-ink);
+    font-family: var(--cp-font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--cp-focus);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--cp-accent) 30%, transparent);
+  }
+}
+
+@layer components {
+  .cp-transition {
+    transition-property: color, background-color, border-color, opacity, transform;
+    transition-duration: var(--cp-motion-fast);
+    transition-timing-function: ease-out;
+  }
 }

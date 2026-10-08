@@ -1,26 +1,66 @@
-/* Design tokens. Components read these variables; change values here, not in components. */
+/*
+ * Design tokens, version 1. Components read these variables (directly or through the Tailwind
+ * theme mapping in globals.css); change values here, never in components.
+ * Contrast pairs were checked with the automated accessibility scan (npm run test:e2e).
+ */
 :root {
-  --color-bg: #fbfaf8;
-  --color-fg: #1b1a18;
-  --color-muted: #5f5b55;
-  --color-accent: #3f5bd8;
-  --space-page: 1.5rem;
-  --radius-md: 0.5rem;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --motion-duration: 150ms;
+  --cp-tokens-version: 1;
+
+  /* Colour: restrained neutrals with one accent. */
+  --cp-canvas: #faf8f5;
+  --cp-surface: #ffffff;
+  --cp-sunken: #f3f0ea;
+  --cp-ink: #1d1b18;
+  --cp-muted: #5b564e;
+  --cp-line: #e2ddd3;
+  --cp-accent: #2b4acb;
+  --cp-accent-strong: #213aa6;
+  --cp-on-accent: #ffffff;
+  --cp-focus: #2b4acb;
+  --cp-success: #1d6b43;
+  --cp-warning: #8a5a00;
+  --cp-danger: #a32626;
+
+  /* Type. System fonts only: nothing is fetched from third parties. */
+  --cp-font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --cp-font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+
+  /* Shape and density. */
+  --cp-radius: 0.875rem;
+  --cp-radius-sm: 0.5rem;
+  --cp-gutter: clamp(1rem, 4vw, 2rem);
+  --cp-density: 1;
+
+  /* Motion. */
+  --cp-motion-fast: 150ms;
+  --cp-motion-base: 250ms;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #12110f;
-    --color-fg: #f2efe9;
-    --color-muted: #a8a299;
-    --color-accent: #8fa2ff;
+    --cp-canvas: #121110;
+    --cp-surface: #1b1a18;
+    --cp-sunken: #171614;
+    --cp-ink: #f3f0ea;
+    --cp-muted: #b1aba0;
+    --cp-line: #34312c;
+    --cp-accent: #93a5ff;
+    --cp-accent-strong: #b4c0ff;
+    --cp-on-accent: #0f1220;
+    --cp-focus: #93a5ff;
+    --cp-success: #6fcf9b;
+    --cp-warning: #e8b45a;
+    --cp-danger: #ff9a9a;
+    color-scheme: dark;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --motion-duration: 0ms;
+    --cp-motion-fast: 0ms;
+    --cp-motion-base: 0ms;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }

@@ -1,5 +1,6 @@
 import { getContainer } from "@/infrastructure/composition";
 import { requireOwnerPage } from "@/presentation/auth/page-guards";
+import { PageHeader } from "@/presentation/components/ui/page-header";
 import { MfaForm } from "./mfa-form";
 
 export const dynamic = "force-dynamic";
@@ -9,12 +10,12 @@ export default async function MfaPage() {
   await requireOwnerPage("/admin/mfa", { allowWithoutMfa: true });
   const { verifiedFactorId } = await getContainer().session.getMfaState();
   return (
-    <main className="mx-auto max-w-md space-y-4 p-6">
-      <h1 className="text-2xl font-semibold">Two-step verification</h1>
-      <p style={{ color: "var(--color-muted)" }}>
-        Owner actions require a code from your authenticator app.
-      </p>
+    <div className="max-w-md space-y-6">
+      <PageHeader
+        title="Two-step verification"
+        description="Owner actions require a code from your authenticator app."
+      />
       <MfaForm existingFactorId={verifiedFactorId} />
-    </main>
+    </div>
   );
 }

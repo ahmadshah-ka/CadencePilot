@@ -29,6 +29,23 @@ export class AppError extends Error {
   }
 }
 
+/**
+ * Structural AppError check. `instanceof` is unreliable here: Next.js can load this module once
+ * per bundle (routes, server actions, instrumentation), so an error thrown by a shared adapter may
+ * come from a different copy of the class.
+ */
+export function isAppError(error: unknown): error is AppError {
+  if (error instanceof AppError) return true;
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as { name?: unknown; code?: unknown; message?: unknown };
+  return (
+    candidate.name === "AppError" &&
+    typeof candidate.code === "string" &&
+    (ERROR_CODES as readonly string[]).includes(candidate.code) &&
+    typeof candidate.message === "string"
+  );
+}
+
 /** The uniform API error envelope. */
 export interface ErrorEnvelope {
   error: { code: ErrorCode; message: string; details?: Readonly<Record<string, unknown>> };
@@ -36,7 +53,7 @@ export interface ErrorEnvelope {
 
 /** Converts any thrown value into a safe envelope; unknown errors become a generic INTERNAL. */
 export function toErrorEnvelope(error: unknown): ErrorEnvelope {
-  if (error instanceof AppError) {
+  if (isAppError(error)) {
     return {
       error: {
         code: error.code,

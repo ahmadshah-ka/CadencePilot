@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sanitizeNextPath } from "@/domain/access/safe-redirect";
 import { getContainer } from "@/infrastructure/composition";
@@ -37,5 +38,7 @@ export async function signInWithGoogleAction(formData: FormData): Promise<void> 
 /** Ends the session and returns to the public home page. */
 export async function signOutAction(): Promise<void> {
   await getContainer().session.signOut();
+  // Drop cached private pages so nothing from the previous session can be shown after sign-out.
+  revalidatePath("/", "layout");
   redirect("/");
 }

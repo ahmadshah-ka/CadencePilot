@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import { buttonClasses } from "@/presentation/components/ui/button";
 import { enrollTotpAction, verifyTotpAction, type EnrollState, type VerifyState } from "./actions";
 
 /** Authenticator-app enrollment (when no factor exists) and code entry (to elevate the session). */
@@ -31,7 +32,7 @@ export function MfaForm({ existingFactorId }: { existingFactorId: string | null 
         <button
           type="button"
           disabled={pending}
-          className="rounded-md border px-4 py-2"
+          className={buttonClasses("secondary")}
           onClick={() => startTransition(async () => setEnrollment(await enrollTotpAction()))}
         >
           Set up authenticator app
@@ -64,11 +65,11 @@ export function MfaForm({ existingFactorId }: { existingFactorId: string | null 
               autoComplete="one-time-code"
               pattern="\d{6}"
               required
-              className="mt-1 rounded-md border p-2"
+              className="mt-1 min-h-11 rounded-md border border-line bg-surface px-3"
             />
           </label>
           {state.error ? <p role="alert">{state.error}</p> : null}
-          <button type="submit" disabled={verifying} className="rounded-md border px-4 py-2">
+          <button type="submit" disabled={verifying} className={buttonClasses("secondary")}>
             Verify
           </button>
         </form>

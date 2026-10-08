@@ -1,5 +1,5 @@
 import type { LogFields, Logger } from "@/application/ports/logger";
-import { AppError } from "@/domain/errors/app-error";
+import { isAppError } from "@/domain/errors/app-error";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -43,7 +43,7 @@ function sanitize(value: unknown, secrets: readonly string[], depth: number): un
   if (value instanceof Date) return value.toISOString();
   if (value instanceof Error) {
     // Messages from unknown errors may embed provider payloads; only AppError text is vetted.
-    return value instanceof AppError
+    return isAppError(value)
       ? { name: value.name, code: value.code, message: scrubString(value.message, secrets) }
       : { name: value.name };
   }

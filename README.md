@@ -25,11 +25,18 @@ With invalid configuration the server still starts: `GET /api/v1/health` returns
 | `npm test` / `test:coverage` | Vitest; coverage enforces 90% on `src/domain`, `src/application`, `src/config` |
 | `npm run check:bundle-secrets` | After a build with canary secrets set, fails if any appear in `.next/static` |
 | `npm run audit:prod` | `npm audit` for production dependencies (high+) |
+| `npm run test:e2e` | Browser tests (Playwright) against a production build and a local fake of the Supabase API; run `npm run build` first. Set `PLAYWRIGHT_CHANNEL=msedge` (or `chrome`) to use an installed browser, otherwise run `npx playwright install chromium`. Screenshots land in `test-results/screens/` |
 | `npm run verify` | format, lint, typecheck, coverage, build and bundle scan in order |
 
 For `verify`/`check:bundle-secrets`, set the core variables plus canary strings in the secret variables (see `.github/workflows/ci.yml` for an example set).
 
-## Endpoints (public, unauthenticated, minimal)
+## Database and sign-in setup
+Migrations are in `supabase/migrations/`. Applying them, bootstrapping the owner, Supabase dashboard settings and the hosted verification checklist are in [docs/auth-and-database-setup.md](docs/auth-and-database-setup.md). Local SQL/RLS tests use an in-process Postgres (`tests/db`) and do not need any hosted resource.
+
+## Routes
+Public: `/`, `/how-it-works`, `/research`, `/request-access`, `/sign-in`. Signed-in: `/account-status` (pending, rejected, suspended), `/app/*` (approved only), `/admin/*` (owner only). API under `/api/v1` (see `src/app/api`). Every route declares an access policy.
+
+## Endpoints: health (public, unauthenticated, minimal)
 - `GET /api/v1/health` → `{"status":"ok"}` (liveness; does not touch config or dependencies)
 - `GET /api/v1/ready` → `{"status":"ready"}` or 503 `{"error":{"code":"DEPENDENCY_UNAVAILABLE","message":"Service is not ready."}}`
 

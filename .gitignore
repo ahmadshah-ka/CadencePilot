@@ -13,3 +13,5 @@ npm-debug.log*
 features-specs/
 Agent Helper/
 context/
+test-results/
+playwright-report/

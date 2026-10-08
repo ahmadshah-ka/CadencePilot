@@ -1,13 +1,18 @@
 import { redirect } from "next/navigation";
 import { signOutAction } from "@/app/actions/auth-actions";
+import { buttonClasses } from "@/presentation/components/ui/button";
+import { CenteredPage } from "@/presentation/components/ui/centered-page";
 import { getPrincipal, SIGN_IN_PATH } from "@/presentation/auth/page-guards";
+import { getProductName } from "@/presentation/site/product-name";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = { title: "Account status" };
 
 const COPY = {
   pending: {
     title: "Request received",
-    body: "Your account is waiting for approval. You can use the product once it has been approved.",
+    body: "Your account is waiting for approval. You can use the product once it has been approved. Sign in again later to check; email notifications are not sent yet.",
   },
   rejected: {
     title: "Access not granted",
@@ -31,16 +36,16 @@ export default async function AccountStatusPage() {
   const copy = COPY[principal.accountStatus ?? "unknown"];
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-6">
-      <h1 className="text-2xl font-semibold">{copy.title}</h1>
-      <p role="status" style={{ color: "var(--color-muted)" }}>
+    <CenteredPage productName={getProductName()}>
+      <h1 className="font-display text-4xl tracking-tight">{copy.title}</h1>
+      <p role="status" className="text-muted">
         {copy.body}
       </p>
       <form action={signOutAction}>
-        <button type="submit" className="rounded-md border px-4 py-2">
+        <button type="submit" className={buttonClasses("secondary")}>
           Sign out
         </button>
       </form>
-    </main>
+    </CenteredPage>
   );
 }

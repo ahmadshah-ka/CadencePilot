@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { REVIEW_DECISIONS } from "@/domain/access/account-status";
 import { getAppConfig, requireOwnerPage } from "@/presentation/auth/page-guards";
+import { buttonClasses } from "@/presentation/components/ui/button";
+import { PageHeader } from "@/presentation/components/ui/page-header";
 import { reviewAccountAction } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +35,8 @@ export default async function ConfirmReviewPage({
   const maxNote = getAppConfig().limits.reviewNoteMaxLength;
 
   return (
-    <main className="mx-auto max-w-md space-y-4 p-6">
-      <h1 className="text-2xl font-semibold capitalize">Confirm: {decision}</h1>
-      <p>{effect}</p>
+    <div className="max-w-xl space-y-6">
+      <PageHeader title={`Confirm: ${decision}`} description={effect} />
       <form action={reviewAccountAction} className="space-y-4">
         <input type="hidden" name="userId" value={user} />
         <input type="hidden" name="decision" value={decision} />
@@ -43,17 +44,21 @@ export default async function ConfirmReviewPage({
         <input type="hidden" name="confirm" value="yes" />
         <label className="block">
           <span className="block text-sm">Note (optional, kept in the audit trail)</span>
-          <textarea name="note" maxLength={maxNote} className="mt-1 w-full rounded-md border p-2" />
+          <textarea
+            name="note"
+            maxLength={maxNote}
+            className="mt-1 w-full rounded-md border border-line bg-surface p-3"
+          />
         </label>
-        <div className="flex gap-3">
-          <button type="submit" className="rounded-md border px-4 py-2 font-medium">
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="submit" className={buttonClasses("danger")}>
             Confirm {decision}
           </button>
-          <Link href="/admin" className="px-4 py-2 underline">
+          <Link href="/admin" className="px-2 py-2 underline underline-offset-4">
             Cancel
           </Link>
         </div>
       </form>
-    </main>
+    </div>
   );
 }

@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { signOutAction } from "@/app/actions/auth-actions";
 import { listAccounts } from "@/application/access/access-use-cases";
 import { ACCOUNT_STATUSES, type AccountStatus } from "@/domain/access/account-status";
 import { getContainer } from "@/infrastructure/composition";
+import { buttonClasses } from "@/presentation/components/ui/button";
+import { Notice, PageHeader } from "@/presentation/components/ui/page-header";
+import { StateMessage } from "@/presentation/components/ui/state-message";
 import { reviewAccountAction } from "./actions";
 import { getAppConfig, requireOwnerPage } from "@/presentation/auth/page-guards";
 
@@ -48,44 +50,38 @@ export default async function AdminPage({
   const message = params.result ? RESULT_MESSAGES[params.result] : undefined;
 
   return (
-    <main className="mx-auto max-w-4xl space-y-6 p-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Access requests</h1>
-        <form action={signOutAction}>
-          <button type="submit" className="rounded-md border px-3 py-1.5">
-            Sign out
-          </button>
-        </form>
-      </header>
-      {message ? (
-        <p role="status" className="rounded-md border p-3">
-          {message}
-        </p>
-      ) : null}
-      <nav aria-label="Filter by status" className="flex gap-2">
+    <div className="space-y-6">
+      <PageHeader
+        title="Access requests"
+        description="Review who has asked for access. Every decision is recorded."
+      />
+      {message ? <Notice>{message}</Notice> : null}
+      <nav aria-label="Filter by status" className="flex flex-wrap gap-2">
         {ACCOUNT_STATUSES.map((value) => (
           <Link
             key={value}
             href={`/admin?status=${value}`}
             aria-current={value === status ? "page" : undefined}
-            className="rounded-md border px-3 py-1.5 capitalize aria-[current=page]:font-semibold"
+            className="cp-transition min-h-11 rounded-md border border-line px-4 py-2 text-sm capitalize aria-[current=page]:border-accent aria-[current=page]:font-medium"
           >
             {value}
           </Link>
         ))}
       </nav>
       {page.items.length === 0 ? (
-        <p style={{ color: "var(--color-muted)" }}>No {status} accounts.</p>
+        <StateMessage tone="empty" title={`No ${status} accounts`}>
+          Nothing to review here right now.
+        </StateMessage>
       ) : (
-        <ul className="divide-y rounded-md border">
+        <ul className="divide-y divide-line border-y border-line">
           {page.items.map((account) => (
             <li
               key={account.userId}
-              className="flex flex-wrap items-center justify-between gap-3 p-4"
+              className="flex flex-wrap items-center justify-between gap-3 py-4"
             >
               <div>
                 <p className="font-medium">{account.displayName ?? "(no name)"}</p>
-                <p className="text-sm" style={{ color: "var(--color-muted)" }}>
+                <p className="text-sm text-muted">
                   {account.email ?? "(no email)"} · requested{" "}
                   {new Date(account.createdAt).toISOString().slice(0, 10)}
                 </p>
@@ -96,7 +92,14 @@ export default async function AdminPage({
                     <input type="hidden" name="userId" value={account.userId} />
                     <input type="hidden" name="decision" value={action.decision} />
                     <input type="hidden" name="expectedRevision" value={account.revision} />
-                    <button type="submit" className="rounded-md border px-3 py-1.5">
+                    <button
+                      type="submit"
+                      className={buttonClasses(
+                        action.decision === "approve" || action.decision === "reinstate"
+                          ? "primary"
+                          : "secondary",
+                      )}
+                    >
                       {action.label}
                     </button>
                   </form>
@@ -109,11 +112,11 @@ export default async function AdminPage({
       {page.nextCursor ? (
         <Link
           href={`/admin?status=${status}&cursor=${encodeURIComponent(page.nextCursor)}`}
-          className="underline"
+          className="underline underline-offset-4"
         >
           Next page
         </Link>
       ) : null}
-    </main>
+    </div>
   );
 }
