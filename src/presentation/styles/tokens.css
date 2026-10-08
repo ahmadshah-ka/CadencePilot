@@ -1,0 +1,26 @@
+/* Design tokens. Components read these variables; change values here, not in components. */
+:root {
+  --color-bg: #fbfaf8;
+  --color-fg: #1b1a18;
+  --color-muted: #5f5b55;
+  --color-accent: #3f5bd8;
+  --space-page: 1.5rem;
+  --radius-md: 0.5rem;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --motion-duration: 150ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #12110f;
+    --color-fg: #f2efe9;
+    --color-muted: #a8a299;
+    --color-accent: #8fa2ff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration: 0ms;
+  }
+}

@@ -1,0 +1,38 @@
+name: CI
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      APP_NAME: CI
+      APP_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-publishable-placeholder
+      SUPABASE_SECRET_KEY: canary-supabase-secret-7f3a
+      DATABASE_URL: canary-database-url-91bc
+      WORKER_SHARED_SECRET: canary-worker-secret-5d2e
+      LLM_API_KEY: canary-llm-key-c44f
+      RESEARCH_API_KEY: canary-research-key-88aa
+      EMAIL_API_KEY: canary-email-key-02de
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run build
+      - run: npm run check:bundle-secrets
+      - run: npm run audit:prod

@@ -1,0 +1,45 @@
+{
+  "name": "cadencepilot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.18.0 <25",
+    "npm": ">=11.16.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check:config": "tsx scripts/check-config.ts",
+    "check:bundle-secrets": "tsx scripts/check-bundle-secrets.ts",
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run check:bundle-secrets"
+  },
+  "dependencies": {
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "24.19.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitest/coverage-v8": "5.0.3",
+    "eslint": "10.12.0",
+    "eslint-config-next": "16.4.0",
+    "prettier": "3.9.9",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.0.3"
+  }
+}
