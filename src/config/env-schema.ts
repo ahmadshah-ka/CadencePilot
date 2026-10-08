@@ -3,6 +3,10 @@ import { z } from "zod";
 /** Stable protocol identifiers (not tenant or environment settings). */
 export const APP_ENVIRONMENTS = ["development", "staging", "production"] as const;
 export const LOG_LEVELS = ["debug", "info", "warn", "error"] as const;
+/** Hard database limits (see supabase/migrations); configurable limits must not exceed them. */
+export const DB_MAX_NAME_LENGTH = 120;
+export const DB_MAX_JSON_BYTES = 16384;
+export const DB_MAX_NOTE_LENGTH = 500;
 /** Default readiness probe timeout; also used when configuration itself failed to load. */
 export const DEFAULT_READINESS_TIMEOUT_MS = 2000;
 
@@ -83,6 +87,13 @@ export const envSchema = z.object({
   CALENDAR_MAX_RANGE_DAYS: positiveInt(42),
   AI_RETENTION_DAYS: optionalPositiveInt,
   OWNER_MFA_REQUIRED: flag(true),
+
+  WORKSPACE_NAME_MAX_LENGTH: positiveInt(80),
+  BRAND_NAME_MAX_LENGTH: positiveInt(80),
+  BRAND_SETTINGS_MAX_BYTES: positiveInt(8192),
+  MAX_BRANDS_PER_WORKSPACE: positiveInt(20),
+  REVIEW_NOTE_MAX_LENGTH: positiveInt(500),
+  MAX_REQUEST_BODY_BYTES: positiveInt(32768),
 });
 
 export type RawEnv = z.infer<typeof envSchema>;

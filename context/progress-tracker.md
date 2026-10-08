@@ -1,10 +1,10 @@
 # Progress tracker
-Planning baseline finalised 2026-10-07. Feature 01 scaffold implemented 2026-10-08; features 02+ have no code. Service accounts, credentials and infrastructure have not been provisioned; only feature 01 local checks have run. Earlier draft superseded.
+Planning baseline finalised 2026-10-07. Feature 01 scaffold implemented 2026-10-08; features 02+ have no code. Local checks have run for implemented features; no hosted integration has been verified (see User-reported setup). Earlier draft superseded.
 
 | ID | Feature | Dependencies | Status | Evidence/blocker |
 |---|---|---|---|---|
 | 01 | [Project foundation](../feature-specs/01-project-foundation.md) | — | Done (local; CI workflow unexecuted) | Completion entry below |
-| 02 | [Authentication and owner approval](../feature-specs/02-authentication-owner-approval.md) | 01 | Not started | — |
+| 02 | [Authentication and owner approval](../feature-specs/02-authentication-owner-approval.md) | 01 | Implemented-unverified | Local checks pass; hosted login/database not verified (see entry) |
 | 03 | [Workspaces and brand isolation](../feature-specs/03-workspaces-brand-isolation.md) | 02 | Not started | — |
 | 04 | [Public site and navigation](../feature-specs/04-public-site-navigation.md) | 03 | Not started | — |
 | 05 | [Onboarding and preferences](../feature-specs/05-onboarding-preferences.md) | 04 | Not started | — |
@@ -20,7 +20,9 @@ Planning baseline finalised 2026-10-07. Feature 01 scaffold implemented 2026-10-
 | 15 | [Operations and release checks](../feature-specs/15-operations-release-checks.md) | 01,02,03,04,05,06,07,08,09,10,11,12,13,14 | Not started | — |
 
 ## Next task
-02 Authentication and owner approval (dependency 01 met). Next milestone is 01–03: running local scaffold, secure approved login and isolated workspace. Feature 05 finishes the deterministic form. Feature 08 adds its AI enhancement; there is no circular dependency.
+Verify 02 against the hosted project using docs/auth-and-database-setup.md (needs the user). Meanwhile 03 builds on 02 locally.
+
+(Previous note: 02 Authentication and owner approval, dependency 01 met.) Next milestone is 01–03: running local scaffold, secure approved login and isolated workspace. Feature 05 finishes the deterministic form. Feature 08 adds its AI enhancement; there is no circular dependency.
 
 ## Completion entries
 ### 01 Project foundation — 2026-10-08
@@ -32,11 +34,24 @@ Planning baseline finalised 2026-10-07. Feature 01 scaffold implemented 2026-10-
 **Config/context changes:** READINESS_TIMEOUT_MS added; architecture/code-standards unchanged. Versions verified at scaffold: Next 16.4.0, React 19.3.0, TypeScript 5.9.3 (TS 7 not used; unverified with Next), Vitest 5.0.3, ESLint 10.12.0, Tailwind 4.3.3, Zod 4.6.5.
 **Next dependency-ready task:** 02 Authentication and owner approval.
 
+### 02 Authentication and owner approval — 2026-10-08 (Implemented-unverified)
+**Branch:** feat/02-auth-owner-approval (stacked on feat/01-project-foundation).
+**Changed files:** supabase/migrations/20261008000100_account_access.sql; src/domain/access/*; src/application/access/*, src/application/ports/{identity,access-repository,auth-session}.ts; src/infrastructure/supabase/*; src/infrastructure/composition.ts; src/presentation/api/{route-handler,body,account-routes}.ts; src/presentation/auth/page-guards.ts; src/proxy.ts; src/app/{sign-in,account-status,app,admin,auth/callback,actions}; /api/v1/{me,admin/accounts,admin/accounts/[userId]/review}; src/config (new limits + production rules); .env.example; docs/auth-and-database-setup.md; tests/*.
+**Design:** Google OAuth with PKCE via @supabase/ssr; sign-in starts in a server action (Next checks the Origin), the post-login path travels in a short-lived HttpOnly cookie so the redirect URL has no query string; /auth/callback exchanges the code, builds redirects from APP_URL and sanitises the path against an allow-list. A DB trigger on auth.users creates every account as pending; ensure_account_access repairs missing rows. The owner is provisioned only by `bootstrap_platform_owner(<verified user id>)` run by hand as the database owner; it is one-time, closed to anon/authenticated/service_role, and ignores metadata. The principal (status, owner flag, aal) is rebuilt from the database on every request, so suspension applies immediately. Review runs through `review_account_access` (service role only; re-verifies the actor is an owner, row lock + expected-revision check, audit event, notification intent in one transaction). Owner actions require aal2 when OWNER_MFA_REQUIRED (must be true in production); /admin/mfa provides TOTP enrollment and verification. Every route declares a policy (public / authenticated / approved / owner); cookie mutations require the configured Origin.
+**Commands and results (Node 24.18.0):** `npm run verify` exit 0: prettier, eslint (0 warnings after cleanup), tsc, vitest 123 passed (coverage 98.8% statements / 97.3% branches / 100% functions over domain+application+config, threshold 90%), next build, bundle scan "No secret canaries in 14 browser bundle files"; `npm run audit:prod` 0 vulnerabilities.
+**Tested locally:** (a) SQL + RLS against PGlite with a stub of Supabase's auth schema/roles/default grants (tests/db/account-access.test.ts, 12 tests): new users pending; forged metadata cannot create an owner; bootstrap one-time/verified-only/closed to API roles; applicants cannot write their own status or insert platform_admins; non-owners and anon denied review, audit and intents; approve once then stale; parallel reviews → exactly one wins; transition rules; self-review forbidden; reject/suspend/reinstate audited; owner can list applicants; profile writes need approval. Mutation check: disabling RLS or granting execute to anon makes these tests fail. (b) Route tests with fakes: anonymous 401; pending/rejected/suspended blocked from approved routes with handler never invoked; suspension takes effect next request; wrong/missing Origin 403; non-owner and no-MFA owner denied; header forgery (x-user-id etc.) ignored; competing reviews 200+409; body validation/size/content-type; invalid config → 503. (c) Live smoke test of the built app with no session: /app and /admin redirect to /sign-in; hostile `next=https://evil.example` neutralised; APIs 401/403; callback with no code / provider error / bogus code → sign-in?error=...; no canary secrets in logs.
+**NOT verified:** anything against the hosted Supabase/Google/Vercel: migrations are not applied; real Google sign-in, the PKCE callback with real cookies, session refresh in the proxy, the trigger on the hosted auth.users, TOTP enrollment, and true multi-connection concurrency (PGlite is single-connection; the FOR UPDATE + revision logic is verified logically, not under real contention). Page components and server actions (admin console, MFA form) are covered by typecheck/build and manual smoke only. Rate limiting of sign-in relies on Supabase Auth defaults. Notification intents are written but nothing consumes or sends them (feature 13).
+**Known limitations / decisions to confirm:** accounts whose Google email is unverified are refused; ban/revoke of existing JWTs after suspension relies on per-request status checks (tokens stay valid but unusable); direct SQL changes to platform_admins are not audited; MAX_BRANDS enforcement is application-level (feature 03).
+**Config/context changes:** SUPABASE_SECRET_KEY now required unless APP_ENV=development; OWNER_MFA_REQUIRED must be true in production; new limits documented in .env.example.
+
 ## Status definitions
 Not started / In progress / Blocked (state exact dependency) / Implemented-unverified / Done (acceptance and checks documented).
 
 ## Completion entry template
 Feature ID; date; changed files; tested scenarios; commands and outcomes; security/isolation evidence; known limitations; config/context changes; next dependency-ready task.
 
+## User-reported setup (not verified by the agent)
+Reported by the user on 2026-10-08, treated as unverified until tested: GitHub repository; hosted Supabase project; Vercel project with application and Supabase environment variables; Google OAuth configured in Supabase; Groq and Tavily credentials and budgets configured in Vercel. The agent has no access to these services from the development machine (no Supabase CLI, no database client, no `.env.local`), so migrations have **not** been applied to the hosted database and hosted login has **not** been exercised. Manual steps and the hosted verification checklist: [docs/auth-and-database-setup.md](../docs/auth-and-database-setup.md). Earlier notes saying accounts and credentials do not exist are superseded by this section.
+
 ## Decisions and implementation assumptions
-Product name, precise brand audiences, user timezone/capacity and permanent output targets are configurable inputs. Initial provider choices: Supabase, Groq, Tavily; Vercel at deployment; Resend optional. No accounts created by this pack. First-release team invitations/billing/autopublishing deferred. Performance figures are proposed targets awaiting a documented benchmark. No unsupported best-in-industry research marketing claim.
+Product name, precise brand audiences, user timezone/capacity and permanent output targets are configurable inputs. Initial provider choices: Supabase, Groq, Tavily; Vercel at deployment; Resend optional. Accounts were created by the user outside this pack (see User-reported setup). First-release team invitations/billing/autopublishing deferred. Performance figures are proposed targets awaiting a documented benchmark. No unsupported best-in-industry research marketing claim.

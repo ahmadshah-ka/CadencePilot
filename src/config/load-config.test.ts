@@ -134,3 +134,50 @@ describe("describeIssues", () => {
     expect(describeIssues([{ variable: "A", problem: "is required" }])).toEqual(["A: is required"]);
   });
 });
+
+describe("deployment and limit rules", () => {
+  it("requires the Supabase secret key outside development", () => {
+    for (const APP_ENV of ["staging", "production"]) {
+      const result = parseConfig({ ...CORE, APP_ENV });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.issues.map((i) => i.variable)).toContain("SUPABASE_SECRET_KEY");
+    }
+    expect(
+      parseConfig({ ...CORE, APP_ENV: "production", SUPABASE_SECRET_KEY: "sb-secret-value" }).ok,
+    ).toBe(true);
+  });
+
+  it("forbids disabling owner MFA in production only", () => {
+    const base = { ...CORE, SUPABASE_SECRET_KEY: "sb-secret-value", OWNER_MFA_REQUIRED: "false" };
+    expect(parseConfig({ ...base, APP_ENV: "production" }).ok).toBe(false);
+    expect(parseConfig({ ...base, APP_ENV: "development" }).ok).toBe(true);
+  });
+
+  it("rejects limits above the database ceilings and exposes limits", () => {
+    const result = parseConfig({
+      ...CORE,
+      BRAND_NAME_MAX_LENGTH: "500",
+      BRAND_SETTINGS_MAX_BYTES: "99999",
+      REVIEW_NOTE_MAX_LENGTH: "501",
+      WORKSPACE_NAME_MAX_LENGTH: "121",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.issues.map((i) => i.variable).sort()).toEqual(
+        [
+          "BRAND_NAME_MAX_LENGTH",
+          "BRAND_SETTINGS_MAX_BYTES",
+          "REVIEW_NOTE_MAX_LENGTH",
+          "WORKSPACE_NAME_MAX_LENGTH",
+        ].sort(),
+      );
+    }
+    const ok = parseConfig(CORE);
+    if (ok.ok)
+      expect(ok.config.limits).toMatchObject({
+        brandNameMaxLength: 80,
+        maxBrandsPerWorkspace: 20,
+        listPageSize: 25,
+      });
+  });
+});

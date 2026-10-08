@@ -1,5 +1,8 @@
 import { AppError } from "@/domain/errors/app-error";
 import {
+  DB_MAX_JSON_BYTES,
+  DB_MAX_NAME_LENGTH,
+  DB_MAX_NOTE_LENGTH,
   ENABLED_SERVICE_REQUIREMENTS,
   SECRET_VARIABLES,
   envSchema,
@@ -23,6 +26,15 @@ export interface AppConfig {
   research: { enabled: boolean };
   notifications: { emailEnabled: boolean };
   ownerMfaRequired: boolean;
+  limits: {
+    workspaceNameMaxLength: number;
+    brandNameMaxLength: number;
+    brandSettingsMaxBytes: number;
+    maxBrandsPerWorkspace: number;
+    reviewNoteMaxLength: number;
+    maxRequestBodyBytes: number;
+    listPageSize: number;
+  };
   /** Raw validated settings for adapters introduced by later features. */
   env: RawEnv;
   /** Secret values, kept only so the logger can scrub them from output. */
@@ -81,6 +93,29 @@ export function parseConfig(source: EnvSource): ConfigResult {
       problem: "must not exceed LLM_GLOBAL_DAILY_TOKEN_CAP",
     });
   }
+  if (env.APP_ENV !== "development" && env.SUPABASE_SECRET_KEY === undefined) {
+    issues.push({
+      variable: "SUPABASE_SECRET_KEY",
+      problem: "is required when APP_ENV is staging or production",
+    });
+  }
+  if (env.APP_ENV === "production" && !env.OWNER_MFA_REQUIRED) {
+    issues.push({
+      variable: "OWNER_MFA_REQUIRED",
+      problem: "must be true when APP_ENV=production",
+    });
+  }
+  const ceilings: Array<[keyof RawEnv, number, number]> = [
+    ["WORKSPACE_NAME_MAX_LENGTH", env.WORKSPACE_NAME_MAX_LENGTH, DB_MAX_NAME_LENGTH],
+    ["BRAND_NAME_MAX_LENGTH", env.BRAND_NAME_MAX_LENGTH, DB_MAX_NAME_LENGTH],
+    ["BRAND_SETTINGS_MAX_BYTES", env.BRAND_SETTINGS_MAX_BYTES, DB_MAX_JSON_BYTES],
+    ["REVIEW_NOTE_MAX_LENGTH", env.REVIEW_NOTE_MAX_LENGTH, DB_MAX_NOTE_LENGTH],
+  ];
+  for (const [variable, value, ceiling] of ceilings) {
+    if (value > ceiling) {
+      issues.push({ variable, problem: `must not exceed the database limit of ${ceiling}` });
+    }
+  }
   if (issues.length > 0) return { ok: false, issues };
 
   const secretValues = SECRET_VARIABLES.map((name) => env[name]).filter(
@@ -102,6 +137,15 @@ export function parseConfig(source: EnvSource): ConfigResult {
       research: { enabled: env.RESEARCH_ENABLED },
       notifications: { emailEnabled: env.NOTIFICATION_EMAIL_ENABLED },
       ownerMfaRequired: env.OWNER_MFA_REQUIRED,
+      limits: {
+        workspaceNameMaxLength: env.WORKSPACE_NAME_MAX_LENGTH,
+        brandNameMaxLength: env.BRAND_NAME_MAX_LENGTH,
+        brandSettingsMaxBytes: env.BRAND_SETTINGS_MAX_BYTES,
+        maxBrandsPerWorkspace: env.MAX_BRANDS_PER_WORKSPACE,
+        reviewNoteMaxLength: env.REVIEW_NOTE_MAX_LENGTH,
+        maxRequestBodyBytes: env.MAX_REQUEST_BODY_BYTES,
+        listPageSize: env.LIST_PAGE_SIZE,
+      },
       env,
       secretValues,
     },
