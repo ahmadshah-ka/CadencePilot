@@ -1,0 +1,11 @@
+node_modules
+.next
+coverage
+package-lock.json
+context
+feature-specs
+Agent Helper
+AGENTS.md
+CLAUDE.md
+README.md
+docs
