@@ -43,3 +43,18 @@ References informing this adapted method: https://www.cochrane.org/authors/handb
 ## Operations and release
 Structured redacted logs with traceId; request latency/errors, queue lag, LLM token/latency/usage, research credits, slow DB queries and connection usage. Health/readiness endpoints expose only minimal status; no secret-bearing diagnostics. Restricted audit events record privileged actions without copying private conversations.
 Separate dev/prod settings, migrations and staged rollout. Confirm backups and restore tests before customer production; free Supabase lacks automatic backups. Data export/retention/deletion apply across memories, jobs/caches and evidence. Publish privacy/terms describing external AI/research processing before public signup. No paid services provisioned by this pack.
+
+
+## Feature 06 implementation
+Series/content/tasks/publications are now defined by additive migration
+20261015000200_content_publication_records.sql. Content has same-brand compound
+parent/series FKs, generated original/derivative kind, immutable creation links,
+private request-payload idempotency and explicit revisions. Production tasks are
+format-specific; content and dependent task transitions are transactional. Each
+item/platform has one publication record, independently corrected from creation
+status. No direct client writes: authorized user-session RPCs recheck membership,
+lock brand/content, validate scope and enforce CAS. RLS protects read access.
+Cursor lists omit bodies; details load source transcript and notes separately.
+No media processing, AI generation, calendar scheduling or analytics added here.
+Feature-05 migration remains unchanged and already applied (user confirmed).
+The new feature-06 migration is pending manual application; no hosted checks run.

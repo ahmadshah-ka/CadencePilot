@@ -1,5 +1,5 @@
 # 06 — Content and publication records
-Status: Not started
+Status: Implemented; locally verified (202 tests and 6 browser checks); new migration pending manual application
 Dependencies: 05
 Authoritative references: AGENTS.md and context/. Shared security/configuration rules apply to every feature.
 

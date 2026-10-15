@@ -8,7 +8,7 @@ Planning baseline finalised 2026-10-07. Features 01–04 are present; feature 05
 | 03 | [Workspaces and brand isolation](../feature-specs/03-workspaces-brand-isolation.md) | 02 | Implemented-unverified | Local checks pass; RLS verified on local PGlite only (see entry) |
 | 04 | [Public site and navigation](../feature-specs/04-public-site-navigation.md) | 03 | Implemented-unverified | Local + browser checks pass against a fake Supabase; hosted not verified (see entry) |
 | 05 | [Onboarding and preferences](../feature-specs/05-onboarding-preferences.md) | 04 | Implemented; locally verified | 178 tests + 6 browser checks pass; migration already applied, user confirmed |
-| 06 | [Content and publication records](../feature-specs/06-content-publication-records.md) | 05 | Not started | — |
+| 06 | [Content and publication records](../feature-specs/06-content-publication-records.md) | 05 | Implemented; locally verified | New additive migration pending manual application |
 | 07 | [AI adapters and budgets](../feature-specs/07-ai-adapters-budgets.md) | 03,06 | Not started | — |
 | 08 | [Brand assistant and memory](../feature-specs/08-brand-assistant-memory.md) | 05,07 | Not started | — |
 | 09 | [Durable jobs](../feature-specs/09-durable-jobs.md) | 07 | Not started | — |
@@ -20,10 +20,10 @@ Planning baseline finalised 2026-10-07. Features 01–04 are present; feature 05
 | 15 | [Operations and release checks](../feature-specs/15-operations-release-checks.md) | 01,02,03,04,05,06,07,08,09,10,11,12,13,14 | Not started | — |
 
 ## Next task
-Feature 05 restoration and local verification are complete. Wait for the user's next
-explicit feature request; feature 06 is next in the implementation sequence.
-Do not restart account setup, rerun applied SQL, use Git, or attempt hosted
-verification. Any new manual step must be reported precisely and briefly.
+Feature 06 local verification is complete. Its one new migration awaits manual application by the user.
+Do not implement feature 07 or any extra workflow without the user's request.
+No Git operations, hosted verification, or reapplication of the already-applied
+feature-05 migration.
 
 ## Completion entries
 ### 01 Project foundation — 2026-10-08
@@ -121,3 +121,40 @@ user's already-applied SQL. Existing feature 02/03 migrations remain intact.
   is limited to the requested feature, with precise new manual steps only.
 - Next feature: 06, only when explicitly requested. No hosted verification task
   blocks or repeats the user's already-confirmed migration work.
+
+### Feature 06 — implemented and locally verified — 2026-10-15
+
+- Implemented manual originals, derivatives, series, separate source transcripts and
+  derivative drafts, ordered format-specific production tasks, archive/restore,
+  and per-platform actual publication records with corrections.
+- Added typed domain contracts, application use cases, session-scoped Supabase
+  adapter, approved-account APIs and Content list/detail forms with cursor paging.
+- New additive migration: supabase/migrations/20261015000200_content_publication_records.sql.
+  Adds series/content_items/tasks/publications, scoped foreign keys, indexes, RLS,
+  restricted column grants, idempotent creates and revision-checked mutation RPCs.
+- Tests: 202 passed across 23 files. Coverage: 98.8% statements, 97.85% branches,
+  100% functions and 99.45% lines. Real migration SQL exercised locally in PGlite.
+- Verified one original across three platforms remains one original/three
+  publications; derivatives count separately; replay does not duplicate records;
+  publication correction and prerequisite reopening preserve source/history;
+  posts omit recording; foreign links, stale revisions, suspended/revoked access,
+  direct writes and unauthorized scope access are rejected.
+- Six browser checks passed across desktop, tablet and mobile using local test
+  services backed by the migration SQL. Includes original-to-derivative workflow,
+  transcript preservation on return, publication correction, cursor boundaries,
+  accessibility and horizontal-overflow checks. Desktop/mobile screenshots inspected.
+- Scoped Prettier and ESLint (zero warnings), TypeScript and production webpack
+  build passed. Bundle scan found no secret canaries in 63 browser files.
+- Browser regression fixes: production checkbox updates immediately and rolls
+  back on failure; prefilled transcript assertions use accessible textbox names.
+- New configurable limits documented in README and src/config/content-policy.json;
+  no new environment variables, accounts, credentials or dependencies.
+- Existing feature-05 migration hash remains exactly
+  5cf65bbc3d45311deb16a852929d29d1389fe1776a3c80bcd541a45fd1521bc0.
+- Manual step: follow docs/feature06-manual-step.md to run ONLY the new migration
+  once in the existing Supabase project. Existing migrations are not reapplied.
+  Hosted application, migration execution and real PostgREST integration were
+  not verified or operated by this agent. Hosted Content requires the new SQL.
+- No Git/GitHub commands, metadata changes, branch operations, deployment or
+  hosted SQL execution. No feature 07, AI, scheduling, analytics or media pipeline.
+- Next: user applies the new migration; further implementation requires a new request.

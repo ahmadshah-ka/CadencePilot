@@ -1,0 +1,7 @@
+{
+  "titleMaxLength": 200,
+  "transcriptMaxLength": 12000,
+  "notesMaxLength": 4000,
+  "urlMaxLength": 2048,
+  "listPageSize": 25
+}

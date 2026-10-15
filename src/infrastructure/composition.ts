@@ -1,3 +1,5 @@
+import type { ContentRepository } from "@/application/ports/content-repository";
+import { createSupabaseContentRepository } from "@/infrastructure/supabase/supabase-content-repository";
 import type { ReadinessCheck } from "@/application/health/check-readiness";
 import type { PreferenceRepository } from "@/application/ports/preference-repository";
 import { createSupabasePreferenceRepository } from "@/infrastructure/supabase/supabase-preference-repository";
@@ -28,7 +30,7 @@ const LOG_LEVEL_VALUES: readonly string[] = ["debug", "info", "warn", "error"];
 
 function createSupabaseAdapters(
   config: AppConfig,
-): Pick<Container, "identity" | "access" | "session" | "workspaces" | "preferences"> {
+): Pick<Container, "identity" | "access" | "session" | "workspaces" | "preferences" | "content"> {
   const settings = {
     url: config.supabase.url,
     publishableKey: config.supabase.publishableKey,
@@ -41,6 +43,7 @@ function createSupabaseAdapters(
     session: createSupabaseAuthSession(settings),
     workspaces: createSupabaseWorkspaceRepository(settings),
     preferences: createSupabasePreferenceRepository(settings),
+    content: createSupabaseContentRepository(settings),
   };
 }
 
@@ -55,10 +58,11 @@ export interface Container {
   session: AuthSessionService;
   workspaces: WorkspaceRepository;
   preferences: PreferenceRepository;
+  content: ContentRepository;
 }
 
 export type AdapterOverrides = Partial<
-  Pick<Container, "identity" | "access" | "session" | "workspaces" | "preferences">
+  Pick<Container, "identity" | "access" | "session" | "workspaces" | "preferences" | "content">
 >;
 
 const unavailable = (): never => {
@@ -68,7 +72,7 @@ const unavailable = (): never => {
 /** Used when configuration is invalid: every call fails safely instead of reaching a provider. */
 const unavailableAdapters: Pick<
   Container,
-  "identity" | "access" | "session" | "workspaces" | "preferences"
+  "identity" | "access" | "session" | "workspaces" | "preferences" | "content"
 > = {
   identity: { getIdentity: async () => unavailable() },
   access: {
@@ -77,6 +81,18 @@ const unavailableAdapters: Pick<
     ensureAccount: async () => unavailable(),
     listAccounts: async () => unavailable(),
     review: async () => unavailable(),
+  },
+  content: {
+    list: async () => unavailable(),
+    detail: async () => unavailable(),
+    listSeries: async () => unavailable(),
+    create: async () => unavailable(),
+    edit: async () => unavailable(),
+    archive: async () => unavailable(),
+    setTask: async () => unavailable(),
+    savePublication: async () => unavailable(),
+    createSeries: async () => unavailable(),
+    editSeries: async () => unavailable(),
   },
   preferences: { get: async () => unavailable(), save: async () => unavailable() },
   workspaces: {
@@ -132,6 +148,7 @@ export function createContainer(env: EnvSource, overrides: AdapterOverrides = {}
     session: overrides.session ?? adapters.session,
     workspaces: overrides.workspaces ?? adapters.workspaces,
     preferences: overrides.preferences ?? adapters.preferences,
+    content: overrides.content ?? adapters.content,
     clock: systemClock,
     // Feature 02+ register database/auth probes here; none exist at foundation.
     readinessChecks: [{ name: "config", check: async () => config.ok }],

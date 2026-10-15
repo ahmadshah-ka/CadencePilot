@@ -91,3 +91,78 @@ application steps. No hosted verification is required from this coding agent.
 The coding agent must not run Git/GitHub commands or alter repository settings
 or branches. Work directly in the current folder and implement only the feature
 the user requests. Manual operations are reported briefly and handled by the user.
+
+
+## Feature 06 — manual content and publication records
+
+Open `/app/content`, choose a brand and add an original. Open the record to save
+source links, an optional pasted source transcript and separate notes/draft text.
+Create derivatives from the original's detail page. Formats and parent/series
+links are fixed at creation so existing production history cannot be silently
+reinterpreted. Series can be named, renamed, archived and restored.
+
+Videos and shorts have recorded -> edited -> ready steps; written posts have
+edited -> ready. Completing steps enforces prerequisite order. Reopening an
+earlier step reopens dependent steps transactionally, without erasing publication
+history. A source transcript is not a derivative draft and no clip timestamps
+are inferred. Archived originals remain linked to existing derivatives and
+cannot receive new derivatives until restored. No hard deletion is exposed.
+
+Publication records are manual facts, not automatic social uploads. Each content
+item has at most one record per platform. Record a real publication date/link,
+or uncheck published and save to correct it. Future dates are rejected. A video
+on three platforms remains one original and three actual publications; its
+derivatives are separate content items. Progress analytics remain feature 14.
+
+### Configuration
+
+No new environment variables. Non-secret settings in
+`src/config/content-policy.json` are validated at module load:
+
+| Key | Type | Default | Purpose |
+|---|---|---|---|
+| titleMaxLength | integer | 200 | Content and series title limit |
+| transcriptMaxLength | integer | 12000 | Optional source transcript character limit |
+| notesMaxLength | integer | 4000 | Separate notes/draft character limit |
+| urlMaxLength | integer | 2048 | Reference/publication URL character limit |
+| listPageSize | integer | 25 | Bounded cursor page size, maximum 100 |
+
+The platform catalog comes from the existing onboarding policy. Schema ceilings
+and format/task enums are persisted contracts; changing them needs an additive
+migration and matching application changes. Existing request-body byte limits
+still apply (including to multi-byte transcripts); oversize submissions fail
+without truncation. The database bounds per-item platform records to 100.
+
+### API and persistence
+
+Under `/api/v1/workspaces/{workspaceId}/brands/{brandId}`:
+- GET `/content` supports cursor, includeArchived and optional parentId.
+- GET `/content/{contentId}` returns detail/tasks/publications and series title.
+- GET `/series` supports cursor and includeArchived.
+- POST `/content-commands` takes `{action,id,input}`. Actions: create, edit,
+  archive, task, publication, create-series, edit-series. Create inputs include a
+  stable UUID requestId reused on retries. Conflicting reuse returns 409 instead
+  of overwriting an existing record. Metadata/tasks/archive use the content
+  revision; publications use the platform record revision (zero=create-only);
+  series editing uses its own revision.
+
+Every route requires approved membership in the workspace and explicit brand
+scope. Reads run as the signed-in user with RLS; RPCs independently reauthorize,
+lock and write transactionally. Direct client table writes are not granted.
+Private idempotency payloads are not exposed through read grants. Compound
+foreign keys and RPC validation prevent cross-brand parents/series and
+derivative-of-derivative links. Lists omit transcript and notes bodies, details
+load them separately. No unbounded collection is rendered at once.
+
+Responses: 400 invalid input, 401 unauthenticated, 403 unapproved/origin failure,
+404 unknown/foreign scope or record, 409 stale revision or invalid transition,
+503 unavailable database. No automatic stale-save retries; preserve/copy draft
+input before reloading. Platform-wide admission throttling remains a release
+hardening item; schema/body/page bounds apply now.
+
+### Manual step
+
+Apply only the new feature-06 migration once using
+[the manual instructions](docs/feature06-manual-step.md). The existing feature-05
+migration is already applied and unchanged. No Git or hosted operations are
+performed by the coding agent. Browser verification uses isolated local services.
