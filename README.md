@@ -166,3 +166,22 @@ Apply only the new feature-06 migration once using
 [the manual instructions](docs/feature06-manual-step.md). The existing feature-05
 migration is already applied and unchanged. No Git or hosted operations are
 performed by the coding agent. Browser verification uses isolated local services.
+
+
+## Feature 07: AI adapter and persistent budgets
+
+Groq generation, streaming text and validated tool proposals now share typed
+provider-neutral contracts. Structured output runs in a separate phase. Global
+and workspace token/request admission is atomic in PostgreSQL, with conservative
+unknown-usage charging and bounded 429 retries. No brand chat, research, weekly
+planning or automatic tool execution is included in this foundation feature.
+
+Implementation/configuration/security details: [docs/feature07-ai-contract.md](docs/feature07-ai-contract.md).
+New SQL and the single manual live connection check: [docs/feature07-manual-step.md](docs/feature07-manual-step.md).
+
+POST `/api/v1/workspaces/{workspaceId}/brands/{brandId}/ai/probe` accepts only
+`{requestId: UUID}` under owner + MFA + own membership + active brand + Origin
+checks. It uses a fixed versioned prompt, normal budgets and a validated schema.
+Repeating the UUID is denied before another provider call. Errors use the existing
+400/401/403/404/409/429/503 envelopes. This is a connection check, not a chat API.
+New optional settings have defaults; existing configured server secrets remain.

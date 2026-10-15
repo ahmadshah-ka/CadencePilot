@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { aiRegistry } from "./ai-policy";
 
 /** Stable protocol identifiers (not tenant or environment settings). */
 export const APP_ENVIRONMENTS = ["development", "staging", "production"] as const;
@@ -56,9 +57,15 @@ export const envSchema = z.object({
   LLM_PROVIDER: z.enum(["groq"]).default("groq"),
   LLM_MODEL: z.string().min(1).default("openai/gpt-oss-120b"),
   LLM_API_KEY: optionalText,
-  LLM_BASE_URL: httpUrl("LLM_BASE_URL").optional(),
+  LLM_BASE_URL: httpUrl("LLM_BASE_URL").default(aiRegistry.baseUrl),
   LLM_TIMEOUT_MS: positiveInt(30000),
-  LLM_MAX_RETRIES: z.coerce.number().int().min(0).default(2),
+  LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.3),
+  LLM_MAX_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
+  LLM_GLOBAL_DAILY_REQUEST_CAP: positiveInt(100),
+  LLM_WORKSPACE_DAILY_REQUEST_CAP: positiveInt(20),
+  LLM_WORKSPACE_REQUESTS_PER_MINUTE: positiveInt(2),
+  LLM_INPUT_COST_PER_MILLION: z.coerce.number().nonnegative().optional(),
+  LLM_OUTPUT_COST_PER_MILLION: z.coerce.number().nonnegative().optional(),
   LLM_CONTEXT_TOKEN_BUDGET: positiveInt(3000),
   LLM_MAX_OUTPUT_TOKENS: positiveInt(1500),
   LLM_MAX_TOOL_STEPS: positiveInt(4),

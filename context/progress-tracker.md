@@ -20,8 +20,8 @@ Planning baseline finalised 2026-10-07. Features 01â€“04 are present; feature 05
 | 15 | [Operations and release checks](../feature-specs/15-operations-release-checks.md) | 01,02,03,04,05,06,07,08,09,10,11,12,13,14 | Not started | â€” |
 
 ## Next task
-Feature 06 local verification is complete. Its one new migration awaits manual application by the user.
-Do not implement feature 07 or any extra workflow without the user's request.
+Feature 07 local implementation is verified. The user applies its new migration and runs the single controlled connection check; see docs/feature07-manual-step.md.
+Do not implement feature 08 or extra workflows without the user's request.
 No Git operations, hosted verification, or reapplication of the already-applied
 feature-05 migration.
 
@@ -158,3 +158,66 @@ user's already-applied SQL. Existing feature 02/03 migrations remain intact.
 - No Git/GitHub commands, metadata changes, branch operations, deployment or
   hosted SQL execution. No feature 07, AI, scheduling, analytics or media pipeline.
 - Next: user applies the new migration; further implementation requires a new request.
+
+### Feature 07 — implemented; local checks complete — 2026-10-15
+
+**Scope/files:** AiProvider/AiBudget ports; domain/ai input/capability rules;
+application/ai/run-ai; infrastructure/ai Groq HTTP/SSE adapter, dependency factory
+and prompt loader; supabase-ai-budget adapter; owner/MFA-protected scoped probe
+API; validated ai-capabilities registry and versioned connection schema/prompt;
+env schema/example, README, architecture and the two feature07 runbooks.
+No new dependencies or product UI; no feature 08/09/10 functionality added.
+
+**New SQL:** supabase/migrations/20261015000300_ai_budgets.sql, pending manual
+application. Private RLS tables ai_budget_windows/ai_reservations; service-only
+fixed admission and settlement RPCs. Four indexed global/tenant day/minute
+counters, short shared advisory transaction lock, one-use request IDs,
+immutable/idempotent settlement, full unknown-charge reservation retention.
+Provider calls happen after successful admission and outside the transaction.
+
+**Checks/results:** 259/259 tests passed in 27 files, including 57 new AI tests.
+Full coverage: 99.08% statements, 98.51% branches, 100% functions, 99.58% lines.
+Command: vitest run --coverage --maxWorkers=1 --hookTimeout=30000 with local
+.test-temp. A prior concurrent build caused PGlite setup timeouts; the final
+suite was rerun successfully without that competing build. No tests skipped.
+Scoped Prettier and ESLint zero-warning checks passed. TypeScript and final
+production next build --webpack passed. npm audit --omit=dev --audit-level=high:
+0 vulnerabilities. Browser secret scan: clean in 64 files. Deployment trace
+explicitly includes prompts/connection-check-v1.txt. No default-compiler retry
+or TypeScript suppression was introduced.
+
+**Security/acceptance:** unauthorized/suspended/foreign/archived/revoked scopes
+denied; owner does not bypass membership; probe requires owner/MFA + Origin +
+strict body. Quota denied before HTTP, duplicate admission denied, global and
+tenant counters enforce token/request limits, actual usage reconciles once,
+unknown/timeouts/disconnects remain charged, retries honor Retry-After and have
+new reservations and hard caps. No automatic retry after provisional stream
+output or uncertain failures. UTF-8/schema context and response byte bounds;
+malformed/empty/truncated/schema-invalid completions rejected; unknown or invalid
+tool proposals rejected and tools never executed. Alternate fake provider passes
+normal phase/metering contracts. Raw provider errors and private inputs never
+enter logs; no secrets reach client bundles. HTTPS-only operator endpoints,
+redirect denial, explicit model allowlist including prototype-key rejection.
+
+**Evidence limits:** SQL exercised in local PGlite, including simultaneous
+promise admission. Independent multi-process PostgreSQL connections and hosted
+PostgREST were not exercised. HTTP/stream fixtures are simulated, not real Groq.
+No live provider request or hosted SQL/deployment performed; controlled live smoke
+and manual migration remain outstanding, so this is not a hosted Done claim.
+No new UI was added, so existing browser suites were not rerun for this feature.
+
+**Manual steps:** docs/feature07-manual-step.md gives the new SQL, existing Vercel
+settings to retain, and one fixed-prompt owner-session smoke request. Optional
+new settings have defaults; no new account/key is required. No .env.local exists
+in this local folder; no secrets were copied or requested.
+
+**Deployment interruption:** user's Vercel error points to missing
+ tests/e2e/content-store.ts. The file exists locally, but existing .gitignore
+excludes tests/. User must include that exact helper in the deployed checkout.
+No Git commands, ignore edits or production type-check exclusions were used to
+hide the missing-module error. Local builds cannot verify repository upload.
+
+**Preserved baseline:** SHA256 of feature02/03/05 migrations still matches the
+recorded baseline; no earlier migrations were modified or reapplied remotely.
+No Git/GitHub commands, branch changes, repository metadata/configuration edits,
+commits, pushes, deployment or hosted mutation. Further features need a new request.

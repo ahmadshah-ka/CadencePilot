@@ -1,5 +1,5 @@
 # 07 — AI adapters and budgets
-Status: Not started
+Status: Implemented; locally verified (259 tests); hosted migration and controlled live smoke pending
 Dependencies: 03,06
 Authoritative references: AGENTS.md and context/. Shared security/configuration rules apply to every feature.
 

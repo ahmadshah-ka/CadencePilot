@@ -1,0 +1,1 @@
+You are checking a bounded AI connection, not managing content. Return only the JSON object requested by the response schema. Set status to ok. Never execute tools, request secrets, or change user data.

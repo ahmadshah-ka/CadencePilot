@@ -58,3 +58,25 @@ Cursor lists omit bodies; details load source transcript and notes separately.
 No media processing, AI generation, calendar scheduling or analytics added here.
 Feature-05 migration remains unchanged and already applied (user confirmed).
 The new feature-06 migration is pending manual application; no hosted checks run.
+
+
+## Feature 07 implementation
+
+AiProvider and AiBudget ports now isolate model HTTP and durable quota admission.
+Groq uses versioned validated capabilities; text streams, tool proposals and
+structured output run as distinct supported phases. runAi validates scope,
+input/context/capabilities and live authorization before every admitted attempt.
+It never executes tools or modifies content. The owner/MFA-protected scoped
+probe uses a fixed prompt and strict output schema; normal chat is feature 08.
+
+New additive migration 20261015000300_ai_budgets.sql creates private counters
+and reservation/usage metadata. Service-only fixed RPCs recheck tenant approval,
+active membership/workspace/brand and atomically coordinate four indexed windows
+under a shared short advisory transaction lock. Actual tokens reconcile once;
+unknown charges remain reserved. Each retry consumes separate admission. No
+in-memory quota fallback, paid fallback, unbounded retry, provider body logging,
+full prompt retention or automatic cleanup/recovery was introduced.
+
+Manual activation and the controlled real smoke call remain user actions; see
+docs/feature07-manual-step.md. Older migrations remain unchanged. See
+docs/feature07-ai-contract.md for provider references, settings and verification limits.

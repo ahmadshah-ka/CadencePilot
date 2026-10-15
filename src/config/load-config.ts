@@ -1,3 +1,4 @@
+import { aiRegistry } from "./ai-policy";
 import { AppError } from "@/domain/errors/app-error";
 import {
   DB_MAX_JSON_BYTES,
@@ -92,6 +93,40 @@ export function parseConfig(source: EnvSource): ConfigResult {
       variable: "LLM_WORKSPACE_DAILY_TOKEN_CAP",
       problem: "must not exceed LLM_GLOBAL_DAILY_TOKEN_CAP",
     });
+  }
+  if (env.LLM_ENABLED) {
+    if (!env.SUPABASE_SECRET_KEY)
+      issues.push({
+        variable: "SUPABASE_SECRET_KEY",
+        problem: "is required for persistent AI budgets",
+      });
+    if (!Object.hasOwn(aiRegistry.models, env.LLM_MODEL))
+      issues.push({
+        variable: "LLM_MODEL",
+        problem: "needs an explicitly verified capability registry entry",
+      });
+    const endpoint = new URL(env.LLM_BASE_URL);
+    if (
+      endpoint.protocol !== "https:" ||
+      endpoint.username ||
+      endpoint.password ||
+      endpoint.search ||
+      endpoint.hash
+    )
+      issues.push({
+        variable: "LLM_BASE_URL",
+        problem: "must be an HTTPS API endpoint without credentials, query or fragment",
+      });
+    if (env.LLM_WORKSPACE_DAILY_REQUEST_CAP > env.LLM_GLOBAL_DAILY_REQUEST_CAP)
+      issues.push({
+        variable: "LLM_WORKSPACE_DAILY_REQUEST_CAP",
+        problem: "must not exceed the global daily request cap",
+      });
+    if (env.LLM_WORKSPACE_REQUESTS_PER_MINUTE > env.LLM_GLOBAL_REQUESTS_PER_MINUTE!)
+      issues.push({
+        variable: "LLM_WORKSPACE_REQUESTS_PER_MINUTE",
+        problem: "must not exceed the global minute request cap",
+      });
   }
   if (env.APP_ENV !== "development" && env.SUPABASE_SECRET_KEY === undefined) {
     issues.push({
