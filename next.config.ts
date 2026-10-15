@@ -2,7 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  outputFileTracingIncludes: { "/api/v1/workspaces/*/brands/*/ai/probe": ["./prompts/*.txt"] },
+  outputFileTracingIncludes: {
+    "/api/v1/workspaces/*/brands/*/ai/probe": ["./prompts/*.txt"],
+    "/api/v1/workspaces/*/brands/*/assistant/chat": ["./prompts/*.txt"],
+  },
   reactStrictMode: true,
 };
 

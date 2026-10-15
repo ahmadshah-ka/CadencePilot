@@ -26,13 +26,13 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "npx tsx tests/e2e/fake-supabase-main.ts",
+      command: "node node_modules/tsx/dist/cli.mjs tests/e2e/fake-supabase-main.ts",
       url: `http://127.0.0.1:${FAKE_PORT}/__test/state`,
       reuseExistingServer: false,
       env: { FAKE_SUPABASE_PORT: String(FAKE_PORT) },
     },
     {
-      command: `npx next start -p ${APP_PORT}`,
+      command: `node node_modules/next/dist/bin/next start -p ${APP_PORT}`,
       url: `http://localhost:${APP_PORT}/api/v1/health`,
       reuseExistingServer: false,
       env: {

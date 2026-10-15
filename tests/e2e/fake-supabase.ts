@@ -9,7 +9,7 @@ import { randomUUID } from "node:crypto";
  * verify hosted behaviour or the SQL policies (those are covered by tests/db and the runbook).
  */
 
-import {createContentStore,CONTENT_TEST_TABLES,CONTENT_TEST_RPCS} from "./content-store";
+import { createContentStore, CONTENT_TEST_TABLES, CONTENT_TEST_RPCS } from "./content-store";
 type Row = Record<string, unknown>;
 
 export interface SeedUser {
@@ -81,8 +81,14 @@ function callerId(req: IncomingMessage): string | null {
 
 export function startFakeSupabase(port: number): Promise<Server> {
   let state = fresh();
-  let contentStore:ReturnType<typeof createContentStore>|null=null;
-  const snapshot=()=>({users:state.users.values(),access:state.access.values(),workspaces:state.workspaces,members:state.members,brands:state.brands});
+  let contentStore: ReturnType<typeof createContentStore> | null = null;
+  const snapshot = () => ({
+    users: state.users.values(),
+    access: state.access.values(),
+    workspaces: state.workspaces,
+    members: state.members,
+    brands: state.brands,
+  });
 
   const isApproved = (uid: string) => state.access.get(uid)?.status === "approved";
   const isActiveMember = (uid: string, workspaceId: unknown) =>
@@ -185,7 +191,10 @@ export function startFakeSupabase(port: number): Promise<Server> {
     try {
       // ---- test control -------------------------------------------------------------------
       if (path === "/__test/reset") {
-        if(contentStore){await (await contentStore).close();contentStore=null;}
+        if (contentStore) {
+          await (await contentStore).close();
+          contentStore = null;
+        }
         state = fresh();
         return json(res, 200, { ok: true });
       }
@@ -240,22 +249,44 @@ export function startFakeSupabase(port: number): Promise<Server> {
 
       // ---- PostgREST ----------------------------------------------------------------------
       if (path.startsWith("/rest/v1/rpc/")) {
-        const name=path.slice("/rest/v1/rpc/".length);
-        if(CONTENT_TEST_RPCS.has(name)){
-          contentStore??=createContentStore();
-          try {const value=await(await contentStore).rpc(snapshot(),uid,name,await readBody(req));return json(res,200,value);}
-          catch(error){const e=error as {code?:string;message?:string};return postgrestError(res,400,e.code??"XX000",e.message??"test database error");}
+        const name = path.slice("/rest/v1/rpc/".length);
+        if (CONTENT_TEST_RPCS.has(name)) {
+          contentStore ??= createContentStore();
+          try {
+            const value = await (
+              await contentStore
+            ).rpc(
+              snapshot(),
+              uid,
+              name,
+              await readBody(req),
+              req.headers.authorization === "Bearer e2e-secret-key-value",
+            );
+            return json(res, 200, value);
+          } catch (error) {
+            const e = error as { code?: string; message?: string };
+            return postgrestError(res, 400, e.code ?? "XX000", e.message ?? "test database error");
+          }
         }
         return rpc(path.slice("/rest/v1/rpc/".length), await readBody(req), uid, res);
       }
       if (path.startsWith("/rest/v1/")) {
         const table = path.slice("/rest/v1/".length);
-        if(CONTENT_TEST_TABLES.has(table)){
-          contentStore??=createContentStore();
-          try {const rows=await(await contentStore).read(snapshot(),uid,table,url.searchParams) as Row[];
-            if(String(req.headers.accept??"").includes("vnd.pgrst.object"))return rows.length===1?json(res,200,rows[0]):postgrestError(res,406,"PGRST116","no rows");
-            return json(res,200,rows);
-          }catch(error){const e=error as {code?:string;message?:string};return postgrestError(res,400,e.code??"XX000",e.message??"test database error");}
+        if (CONTENT_TEST_TABLES.has(table)) {
+          contentStore ??= createContentStore();
+          try {
+            const rows = (await (
+              await contentStore
+            ).read(snapshot(), uid, table, url.searchParams)) as Row[];
+            if (String(req.headers.accept ?? "").includes("vnd.pgrst.object"))
+              return rows.length === 1
+                ? json(res, 200, rows[0])
+                : postgrestError(res, 406, "PGRST116", "no rows");
+            return json(res, 200, rows);
+          } catch (error) {
+            const e = error as { code?: string; message?: string };
+            return postgrestError(res, 400, e.code ?? "XX000", e.message ?? "test database error");
+          }
         }
         const all = tables()[table];
         if (!all || !uid) return postgrestError(res, 401, "42501", "permission denied");

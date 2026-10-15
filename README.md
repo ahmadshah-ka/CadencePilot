@@ -185,3 +185,24 @@ checks. It uses a fixed versioned prompt, normal budgets and a validated schema.
 Repeating the UUID is denied before another provider call. Errors use the existing
 400/401/403/404/409/429/503 envelopes. This is a connection check, not a chat API.
 New optional settings have defaults; existing configured server secrets remain.
+
+## Feature 08: private brand assistant and confirmed memory
+
+Open `/app/assistant` or select a brand in the desktop assistant panel. The
+assistant answers from exact content/publication statistics, confirmed settings,
+confirmed memories, and bounded brand history. Another brand is excluded unless
+the user explicitly selects an authorized comparison; only that brand's aggregate
+counts enter the conversation. Chat and onboarding suggestions never change
+settings or memory until the user confirms them.
+
+History and exports are cursor-paged. Users can inspect a memory's available
+source, edit or forget a memory, forget an exchange, or forget a conversation.
+Expired/forgotten sources are removed from future summaries. Streamed text is
+provisional; only a fully validated answer is stored. Settings forms remain the
+fallback when AI is disabled or unavailable.
+
+Feature 08 adds no environment variable or dependency. It reuses Feature 07's
+LLM/provider/budget settings and the existing `AI_RETENTION_DAYS` override.
+Non-secret defaults and bounds are in `src/config/assistant-policy.json`; see
+[the assistant contract](docs/feature08-brand-assistant.md) and
+[the one-time manual activation](docs/feature08-manual-step.md).

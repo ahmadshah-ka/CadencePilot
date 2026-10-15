@@ -1,0 +1,20 @@
+{
+  "messageMaxLength": 2000,
+  "answerMaxLength": 12000,
+  "memoryValueMaxLength": 1000,
+  "memoryKeyMaxLength": 64,
+  "pageSize": 20,
+  "historyLimit": 8,
+  "memoryLimit": 20,
+  "searchLimit": 6,
+  "searchQueryMaxLength": 200,
+  "proposalLimit": 4,
+  "summaryExcerptLength": 160,
+  "summaryMaxLength": 2000,
+  "retentionDays": 30,
+  "turnLeaseSeconds": 240,
+  "streamBatchMs": 250,
+  "comparisonBrandLimit": 3,
+  "turnsPerMinute": 6,
+  "turnsPerDay": 100
+}

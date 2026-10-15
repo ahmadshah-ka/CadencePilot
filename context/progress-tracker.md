@@ -9,8 +9,8 @@ Planning baseline finalised 2026-10-07. Features 01–04 are present; feature 05
 | 04 | [Public site and navigation](../feature-specs/04-public-site-navigation.md) | 03 | Implemented-unverified | Local + browser checks pass against a fake Supabase; hosted not verified (see entry) |
 | 05 | [Onboarding and preferences](../feature-specs/05-onboarding-preferences.md) | 04 | Implemented; locally verified | 178 tests + 6 browser checks pass; migration already applied, user confirmed |
 | 06 | [Content and publication records](../feature-specs/06-content-publication-records.md) | 05 | Implemented; locally verified | New additive migration pending manual application |
-| 07 | [AI adapters and budgets](../feature-specs/07-ai-adapters-budgets.md) | 03,06 | Not started | — |
-| 08 | [Brand assistant and memory](../feature-specs/08-brand-assistant-memory.md) | 05,07 | Not started | — |
+| 07 | [AI adapters and budgets](../feature-specs/07-ai-adapters-budgets.md) | 03,06 | Implemented; locally verified | New additive migration and controlled live check remain manual |
+| 08 | [Brand assistant and memory](../feature-specs/08-brand-assistant-memory.md) | 05,07 | Implemented; locally verified | 303 tests + 6 browser checks pass; new additive migration pending manual application |
 | 09 | [Durable jobs](../feature-specs/09-durable-jobs.md) | 07 | Not started | — |
 | 10 | [Research and content briefs](../feature-specs/10-research-content-briefs.md) | 06,08,09 | Not started | — |
 | 11 | [Weekly plans](../feature-specs/11-weekly-plans.md) | 05,06,09,10 | Not started | — |
@@ -20,10 +20,12 @@ Planning baseline finalised 2026-10-07. Features 01–04 are present; feature 05
 | 15 | [Operations and release checks](../feature-specs/15-operations-release-checks.md) | 01,02,03,04,05,06,07,08,09,10,11,12,13,14 | Not started | — |
 
 ## Next task
-Feature 07 local implementation is verified. The user applies its new migration and runs the single controlled connection check; see docs/feature07-manual-step.md.
-Do not implement feature 08 or extra workflows without the user's request.
-No Git operations, hosted verification, or reapplication of the already-applied
-feature-05 migration.
+Features 07 and 08 are locally verified. Apply any pending additive migrations
+for 06, 07 and 08 in filename order, skipping each one already applied. Feature 07's
+controlled live check is in docs/feature07-manual-step.md; Feature 08 activation is
+in docs/feature08-manual-step.md. Do not implement feature 09 or extra workflows
+without the user's request. No Git operations, hosted verification, or reapplication
+of the already-applied feature-05 migration.
 
 ## Completion entries
 ### 01 Project foundation — 2026-10-08
@@ -159,7 +161,7 @@ user's already-applied SQL. Existing feature 02/03 migrations remain intact.
   hosted SQL execution. No feature 07, AI, scheduling, analytics or media pipeline.
 - Next: user applies the new migration; further implementation requires a new request.
 
-### Feature 07 � implemented; local checks complete � 2026-10-15
+### Feature 07 � implemented; local checks complete � 2026-10-15
 
 **Scope/files:** AiProvider/AiBudget ports; domain/ai input/capability rules;
 application/ai/run-ai; infrastructure/ai Groq HTTP/SSE adapter, dependency factory
@@ -221,3 +223,74 @@ hide the missing-module error. Local builds cannot verify repository upload.
 recorded baseline; no earlier migrations were modified or reapplied remotely.
 No Git/GitHub commands, branch changes, repository metadata/configuration edits,
 commits, pushes, deployment or hosted mutation. Further features need a new request.
+
+### Feature 08 — implemented and locally verified — 2026-10-15
+
+**Scope/files:** assistant domain rules and typed repository contract; two-phase
+application orchestration; Supabase repository and fixed RPC adapter; server prompt
+loader; state/chat/command/source/export APIs; full assistant workspace and compact
+desktop panel; two versioned prompt files; assistant policy configuration; additive
+SQL migration; unit, adapter, SQL/RLS and browser tests; README, architecture, AI/UI
+context and Feature 08 runbooks. No Feature 09 queue, research, planning, publishing,
+media processing or external autonomous action was added.
+
+**Data/security design:** migration `20261015000400_brand_assistant_memory.sql`
+adds scoped conversations, paired messages, confirmed personal/brand memories and
+source-provenance summaries. RLS permits approved own-user/member reads; direct
+client and broad service table writes are denied. Fixed service RPC operations
+reauthorize and serialize idempotent begin/final/fail/confirm/forget/memory/summary
+changes. Compound scope checks, context revisions and source validation prevent
+cross-brand records, stale proposal resurrection and forgotten/superseded sources
+from returning through summaries. History/export are cursor-bounded; FTS and scoped
+stats indexes serve relevant records. Retention redaction occurs on authorized
+access; confirmed memory remains until explicitly forgotten.
+
+**AI behavior:** the first bounded phase may select only exact stats, selected-brand
+content history, current settings or validated proposals. The second phase receives
+current database facts/settings, confirmed scoped memories and only the history and
+summary blocks that fit the configured context budget. The selected brand and every
+explicit comparison are reauthorized during streaming and before commit. Numerical
+references resolve from fresh DB strings; literal, unknown or malformed numeric
+references are rejected. Provisional output is never stored. Failed/disconnected or
+revoked streams atomically leave a failed pair and no partial assistant answer.
+Memory/settings proposals persist only after explicit confirmation and current-policy
+revalidation. Operational logs exclude messages, prompts, raw provider responses,
+reasoning and secrets.
+
+**Checks/results:** TypeScript strict check passed. Scoped Prettier and ESLint passed
+with zero warnings. Vitest: 303/303 tests in 30 files; coverage 98.59% statements,
+96.38% branches, 100% functions and 99.28% lines. Tests cover exact stats, forged
+tools, explicit authorized comparisons, comparison revocation during streaming,
+personal/brand isolation, stale/oversize proposals, confirmation and forgetting,
+summary invalidation, expiry, admission, stale leases, RLS/direct-write denial,
+foreign scope, source/export paging, API/SSE failures and adapter contracts.
+
+Production `next build --webpack` passed after the sandbox-only folder-creation
+restriction was removed; this was not an application error. The browser secret scan
+found no canaries in 70 files. The deployment trace contains both Feature 08 prompt
+files. Edge/Playwright: 6/6 critical journeys passed at desktop, tablet and mobile,
+including private memory/source/edit/forget, brand switching, foreign-scope denial,
+AI-disabled fallback, accessibility and no horizontal overflow, plus streamed-error
+draft preservation. Desktop and mobile screenshots were inspected. The Playwright
+server commands now invoke pinned local binaries directly rather than `npx`.
+
+**Configuration/docs:** no dependency or new environment key. Existing
+`AI_RETENTION_DAYS` controls effective history retention. Non-secret message,
+answer, memory, pagination, retrieval, proposal/comparison, lease/stream and
+admission limits are validated from `src/config/assistant-policy.json`. The UI uses
+the effective server retention value. See docs/feature08-brand-assistant.md and
+docs/feature08-manual-step.md.
+
+**Evidence limits/manual step:** hosted Supabase/PostgREST, Vercel deployment, a
+live Groq response and independent multi-process PostgreSQL contention were not
+tested. SQL/RLS ran in local PGlite; browser journeys used the real application with
+a local SQL-backed Supabase HTTP fake and an intercepted failure stream. Apply only
+the new Feature 08 migration once in the existing Supabase project, after any
+earlier pending additive migration. Do not rerun the already-applied Feature 05 SQL.
+No hosted operation or Git/GitHub command was performed.
+
+**Preserved baseline:** account-access, workspace/brand and creator-preferences
+migration hashes remain `3f2470fca8f7e3d2773033abe85f140a9caaa872c4685af0c6237542ceaa4d66`,
+`3b6e92ab03c4fcb2f8a5eea5f7e14690be620cbea9db0ba564983c0b6a35934e` and
+`5cf65bbc3d45311deb16a852929d29d1389fe1776a3c80bcd541a45fd1521bc0`.
+Next implementation requires an explicit new request.

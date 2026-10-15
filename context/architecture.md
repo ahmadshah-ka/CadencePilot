@@ -80,3 +80,22 @@ full prompt retention or automatic cleanup/recovery was introduced.
 Manual activation and the controlled real smoke call remain user actions; see
 docs/feature07-manual-step.md. Older migrations remain unchanged. See
 docs/feature07-ai-contract.md for provider references, settings and verification limits.
+
+## Feature 08 implementation
+
+The brand assistant adds per-user/per-brand conversations, paired turn messages,
+confirmed personal or brand memory, and source-linked summaries through additive
+migration `20261015000400_brand_assistant_memory.sql`. RLS protects scoped reads;
+fixed service-role RPC operations own idempotent turn admission, atomic completion,
+confirmation, forgetting, retention cleanup and summary invalidation. Direct
+client writes remain denied. Full-text indexes support bounded relevant-history
+retrieval; cursor indexes keep history/export reads bounded.
+
+Application orchestration uses two Feature 07 model phases. The model can select
+only server-defined read/proposal tools; it never supplies tenant authority or
+executes a write. Exact numerical references resolve from fresh database facts.
+Current settings are authoritative over summaries; confirmed memories are scoped;
+forgotten/expired sources invalidate summaries and cannot re-enter later context.
+The stream rechecks the selected brand and every explicit comparison scope before
+emitting guarded batches and before the atomic final commit. No vector store,
+background job, research, planning or external action was added.

@@ -1,3 +1,4 @@
+import { BrandAssistant } from "@/presentation/components/assistant/brand-assistant";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { signOutAction } from "@/app/actions/auth-actions";
@@ -134,10 +135,25 @@ export function AppShell({
           <h2 id="assistant-panel-title" className="font-display text-xl">
             Brand assistant
           </h2>
-          <p className="mt-2 text-sm text-muted">
-            The assistant is not available yet. When it arrives it will answer in the context of the
-            brand you are viewing and show where each remembered fact came from.
-          </p>
+          <div className="mt-4">
+            {scope.workspace && scope.selectedBrand ? (
+              <BrandAssistant
+                key={scope.selectedBrand.id}
+                workspaceId={scope.workspace.id}
+                brandId={scope.selectedBrand.id}
+                brandName={scope.selectedBrand.name}
+                compact
+              />
+            ) : (
+              <p className="text-sm text-muted">
+                Select a brand above to open its private assistant, or{" "}
+                <Link className="underline" href="/app/assistant">
+                  open the assistant workspace
+                </Link>
+                .
+              </p>
+            )}
+          </div>
         </aside>
       </div>
     </div>

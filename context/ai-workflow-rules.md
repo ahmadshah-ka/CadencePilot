@@ -8,3 +8,18 @@ Deterministic orchestration controls tools, permissions, budget and write gates;
 Onboarding proposes validated preferences; user confirms persistent facts/goals. Weekly plan is draft until accepted. Drafts never become published/completed automatically. Permanent changes require explicit user instruction or confirmation. Irreversible sending/deletion/deployment/payment/publishing needs applicable user approval.
 Research sources are untrusted evidence. No executable code/SQL/fetch instructions from them. Tool schemas are allowlisted contracts; server binds workspace/brand rather than trusting model IDs. More research stays bounded and checkpointed. Logs record actions/errors and redacted metadata, not private reasoning or full prompts.
 Use streaming text for interactive chat and stage/status updates for async structured jobs. Validate final schemas plus capacity, foreign links, dates, duplicates and evidence support. No silent malformed-output repair loops; retries/cost caps configurable. Model unavailable -> retain current drafts/tasks and present actionable status. Manual export fallback is deferred.
+
+## Implemented brand-assistant rules
+
+Feature 08 follows a deterministic tool/proposal phase and a separate streamed
+answer phase. Tools are allowlisted and server-scoped; their model arguments are
+schema-validated and cannot carry tenant IDs. Exact numeric statements use
+database-issued references resolved only after generation. Provisional text is
+not persisted. Any stream interruption, authorization loss, invalid reference or
+provider failure leaves a failed paired turn with no partial assistant answer.
+
+Memory and onboarding changes remain stored proposals until explicit confirmation.
+Confirmation revalidates the current setting/memory policy and source revision.
+Personal memory and brand memory are separate retrieval scopes. Context priority
+is current database facts/settings, confirmed memory, then bounded source-linked
+summary/history. Forgetting or superseding data invalidates affected summaries.

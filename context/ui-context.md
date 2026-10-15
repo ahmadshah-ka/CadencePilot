@@ -25,3 +25,14 @@ Separate protected /admin navigation. Pending applicants first, review details a
 
 ## States and verification
 Every screen defines empty, loading, provider-limit, error, forbidden, stale/conflicting-update and mobile states. Skeletons only where they clarify; meaningful progress for research. Preserve unsaved notes and show safe retry. Forms have inline errors; success is confirmed after server write. Prototype landing/Home/topic/admin first using labelled mock data; inspect layouts at mobile/tablet/desktop before extending all views.
+
+## Implemented assistant workspace
+
+`/app/assistant` provides the full brand-scoped history, verified-record counts,
+explicit comparison selection, onboarding/chat modes, proposal confirmation,
+memory source/edit/forget controls, paged export and conversation forgetting. The
+desktop shell has a compact assistant for the selected brand; mobile uses the full
+workspace. Provisional streamed text is labelled and cleared on failure while the
+unsent question remains. The displayed retention period comes from server state.
+Settings links provide a non-AI fallback. Plain text rendering avoids generated
+HTML injection; all destructive forgetting actions require explicit confirmation.

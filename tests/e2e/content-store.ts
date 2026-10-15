@@ -48,6 +48,8 @@ const TABLE_COLUMNS: Record<string, string[]> = {
   ],
 };
 const RPC_ARGS: Record<string, string[]> = {
+  assistant_read: ["p_workspace", "p_brand", "p_kind", "p_args"],
+  assistant_mutate: ["p_user", "p_workspace", "p_brand", "p_operation", "p_data"],
   create_manual_content: [
     "p_workspace",
     "p_brand",
@@ -121,11 +123,16 @@ export async function createContentStore() {
         [b.id, b.workspace_id, b.name, b.profile ?? {}, b.targets ?? {}, b.archived_at],
       );
   }
-  async function execute(snapshot: Snapshot, userId: string | null, work: () => Promise<unknown>) {
+  async function execute(
+    snapshot: Snapshot,
+    userId: string | null,
+    work: () => Promise<unknown>,
+    service = false,
+  ) {
     // Serialize role changes so parallel HTTP requests cannot borrow each other's test identity.
     const result = tail.then(async () => {
       await sync(snapshot);
-      return as(db, userId ? { sub: userId } : "anon", work);
+      return as(db, service ? "service" : userId ? { sub: userId } : "anon", work);
     });
     tail = result.then(
       () => undefined,
@@ -135,17 +142,22 @@ export async function createContentStore() {
   }
   return {
     close: () => db.close(),
-    rpc: (snapshot: Snapshot, userId: string | null, name: string, body: Row) =>
-      execute(snapshot, userId, async () => {
-        const names = RPC_ARGS[name];
-        if (!names) throw new Error("unknown content RPC");
-        const placeholders = names.map((_, index) => `$${index + 1}`).join(",");
-        const result = await db.query<{ value: unknown }>(
-          `select public.${name}(${placeholders}) as value`,
-          names.map((key) => body[key] ?? null),
-        );
-        return result.rows[0]?.value ?? null;
-      }),
+    rpc: (snapshot: Snapshot, userId: string | null, name: string, body: Row, service = false) =>
+      execute(
+        snapshot,
+        userId,
+        async () => {
+          const names = RPC_ARGS[name];
+          if (!names) throw new Error("unknown content RPC");
+          const placeholders = names.map((_, index) => `$${index + 1}`).join(",");
+          const result = await db.query<{ value: unknown }>(
+            `select public.${name}(${placeholders}) as value`,
+            names.map((key) => body[key] ?? null),
+          );
+          return result.rows[0]?.value ?? null;
+        },
+        service,
+      ),
     read: (snapshot: Snapshot, userId: string | null, table: string, params: URLSearchParams) =>
       execute(snapshot, userId, async () => {
         const columns = TABLE_COLUMNS[table];

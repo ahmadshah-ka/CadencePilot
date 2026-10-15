@@ -1,5 +1,5 @@
 # 08 — Brand assistant and memory
-Status: Not started
+Status: Implemented; locally verified — hosted migration and live provider check pending
 Dependencies: 05,07
 Authoritative references: AGENTS.md and context/. Shared security/configuration rules apply to every feature.
 
