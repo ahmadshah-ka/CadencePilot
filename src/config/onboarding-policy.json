@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "textMaxLength": 2000,
+  "weeklyTargetMax": 100,
+  "maxWeeklyOverrides": 26,
+  "maxAvailabilityWindows": 28,
+  "maxSettingsBytes": 8192,
+  "minutesPerDay": 1440,
+  "daysPerWeek": 7,
+  "platforms": [
+    "youtube",
+    "instagram",
+    "tiktok",
+    "linkedin",
+    "facebook",
+    "threads",
+    "x",
+    "pinterest",
+    "other"
+  ],
+  "formats": ["videos", "shorts", "posts"],
+  "weekdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+}

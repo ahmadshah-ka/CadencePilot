@@ -1,4 +1,6 @@
 import type { ReadinessCheck } from "@/application/health/check-readiness";
+import type { PreferenceRepository } from "@/application/ports/preference-repository";
+import { createSupabasePreferenceRepository } from "@/infrastructure/supabase/supabase-preference-repository";
 import type { Clock } from "@/application/ports/clock";
 import type { AccessRepository } from "@/application/ports/access-repository";
 import type { AuthSessionService } from "@/application/ports/auth-session";
@@ -26,7 +28,7 @@ const LOG_LEVEL_VALUES: readonly string[] = ["debug", "info", "warn", "error"];
 
 function createSupabaseAdapters(
   config: AppConfig,
-): Pick<Container, "identity" | "access" | "session" | "workspaces"> {
+): Pick<Container, "identity" | "access" | "session" | "workspaces" | "preferences"> {
   const settings = {
     url: config.supabase.url,
     publishableKey: config.supabase.publishableKey,
@@ -38,6 +40,7 @@ function createSupabaseAdapters(
     access: createSupabaseAccessRepository(settings),
     session: createSupabaseAuthSession(settings),
     workspaces: createSupabaseWorkspaceRepository(settings),
+    preferences: createSupabasePreferenceRepository(settings),
   };
 }
 
@@ -51,10 +54,11 @@ export interface Container {
   access: AccessRepository;
   session: AuthSessionService;
   workspaces: WorkspaceRepository;
+  preferences: PreferenceRepository;
 }
 
 export type AdapterOverrides = Partial<
-  Pick<Container, "identity" | "access" | "session" | "workspaces">
+  Pick<Container, "identity" | "access" | "session" | "workspaces" | "preferences">
 >;
 
 const unavailable = (): never => {
@@ -62,7 +66,10 @@ const unavailable = (): never => {
 };
 
 /** Used when configuration is invalid: every call fails safely instead of reaching a provider. */
-const unavailableAdapters: Pick<Container, "identity" | "access" | "session" | "workspaces"> = {
+const unavailableAdapters: Pick<
+  Container,
+  "identity" | "access" | "session" | "workspaces" | "preferences"
+> = {
   identity: { getIdentity: async () => unavailable() },
   access: {
     getAccount: async () => unavailable(),
@@ -71,6 +78,7 @@ const unavailableAdapters: Pick<Container, "identity" | "access" | "session" | "
     listAccounts: async () => unavailable(),
     review: async () => unavailable(),
   },
+  preferences: { get: async () => unavailable(), save: async () => unavailable() },
   workspaces: {
     getMembership: async () => unavailable(),
     findOwnWorkspace: async () => unavailable(),
@@ -123,6 +131,7 @@ export function createContainer(env: EnvSource, overrides: AdapterOverrides = {}
     access: overrides.access ?? adapters.access,
     session: overrides.session ?? adapters.session,
     workspaces: overrides.workspaces ?? adapters.workspaces,
+    preferences: overrides.preferences ?? adapters.preferences,
     clock: systemClock,
     // Feature 02+ register database/auth probes here; none exist at foundation.
     readinessChecks: [{ name: "config", check: async () => config.ok }],

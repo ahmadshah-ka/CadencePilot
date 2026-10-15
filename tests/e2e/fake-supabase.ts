@@ -26,6 +26,7 @@ interface State {
   workspaces: Row[];
   members: Row[];
   brands: Row[];
+  preferences: Row[];
   audit: Row[];
 }
 
@@ -36,6 +37,7 @@ const fresh = (): State => ({
   workspaces: [],
   members: [],
   brands: [],
+  preferences: [],
   audit: [],
 });
 
@@ -89,6 +91,8 @@ export function startFakeSupabase(port: number): Promise<Server> {
   /** Rough emulation of the RLS policies in supabase/migrations. */
   function visible(table: string, row: Row, uid: string): boolean {
     switch (table) {
+      case "creator_preferences":
+        return row.user_id === uid && isApproved(uid);
       case "account_access":
         return row.user_id === uid || state.admins.has(uid);
       case "platform_admins":
@@ -109,6 +113,7 @@ export function startFakeSupabase(port: number): Promise<Server> {
     workspaces: state.workspaces,
     workspace_members: state.members,
     brands: state.brands,
+    creator_preferences: state.preferences,
   });
 
   function matches(row: Row, params: URLSearchParams): boolean {
@@ -244,6 +249,16 @@ export function startFakeSupabase(port: number): Promise<Server> {
         );
 
         if (req.method === "POST") {
+          if (table === "creator_preferences") {
+            const body = await readBody(req);
+            if (body.user_id !== uid || !isApproved(uid))
+              return postgrestError(res, 403, "42501", "permission denied");
+            if (state.preferences.some((row) => row.user_id === uid))
+              return postgrestError(res, 409, "23505", "duplicate");
+            const row = { user_id: uid, settings: body.settings, revision: 1 };
+            state.preferences.push(row);
+            return json(res, 201, wantsObject ? row : [row]);
+          }
           if (table !== "brands") return postgrestError(res, 403, "42501", "permission denied");
           const body = await readBody(req);
           if (!isActiveMember(uid, body.workspace_id)) {
@@ -289,7 +304,8 @@ export function startFakeSupabase(port: number): Promise<Server> {
         let rows = all.filter((row) => visible(table, row, uid) && matches(row, url.searchParams));
 
         if (req.method === "PATCH") {
-          if (table !== "brands") return postgrestError(res, 403, "42501", "permission denied");
+          if (table !== "brands" && table !== "creator_preferences")
+            return postgrestError(res, 403, "42501", "permission denied");
           const patch = await readBody(req);
           for (const row of rows) {
             Object.assign(row, patch, {

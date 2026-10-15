@@ -1,5 +1,5 @@
 # 05 — Onboarding and preferences
-Status: Not started
+Status: Implemented and locally verified; database migration already applied (user confirmed)
 Dependencies: 04
 Authoritative references: AGENTS.md and context/. Shared security/configuration rules apply to every feature.
 
@@ -19,3 +19,7 @@ No availability, shift cancellation, impossible goal, partial questionnaire, AI 
 
 ## Security and operations gate
 Validate inputs and AI output; check approved-account/workspace/brand/owner authorization as appropriate; test forbidden access; keep secrets/private content out of client/logs; apply configurable resource limits and idempotency to mutations/jobs. Trace failures with safe error messages. Describe migration/recovery implications. No automatic external irreversible actions.
+
+Manual migration status: creator_preferences SQL supplied by the user is already applied. Preserve it; do not rerun or duplicate it.
+
+Restoration verified: 178 local tests, six responsive browser journeys, TypeScript, ESLint, scoped formatting, Webpack production build and secret scan passed. No Git or hosted operations.

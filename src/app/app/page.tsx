@@ -33,7 +33,12 @@ export default async function HomePage({
       state: hasBrand ? "done" : scope.workspace ? "next" : "later",
       href: "/app/brands",
     },
-    { label: "Set goals and availability", state: "later", note: "Arrives with onboarding" },
+    {
+      label: "Set goals and availability",
+      state: hasBrand ? "next" : "later",
+      href: "/app/settings",
+      note: "Availability in Settings; goals inside each brand",
+    },
     { label: "Review your first weekly plan", state: "later", note: "Arrives with weekly plans" },
   ];
 

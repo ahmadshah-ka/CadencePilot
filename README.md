@@ -42,3 +42,52 @@ Public: `/`, `/how-it-works`, `/research`, `/request-access`, `/sign-in`. Signed
 
 ## Layout
 `src/domain` (pure rules, errors) → `src/application` (use cases, ports) → `src/infrastructure` (adapters, composition root) → `src/presentation` + `src/app` (thin Next handlers/pages). `src/config` holds validated settings. See `AGENTS.md` and `context/`.
+
+
+## Feature 05: restored onboarding and preferences
+
+Personal timezone and availability: `/app/settings`. Open a brand's name under
+`/app/brands` to edit its topic, audience, tone, platforms and goals. Drafts save
+explicitly and can be resumed. Permanent goals are separate from Monday-scoped
+weekly overrides. Empty availability means no capacity, not assumed free time.
+AI onboarding remains feature 08. No new API keys or environment variables.
+
+Non-secret settings are versioned in `src/config/onboarding-policy.json`:
+
+| Key | Type | Default | Purpose |
+|---|---|---|---|
+| version | integer | 1 | Policy document version |
+| textMaxLength | integer | 2000 | Maximum descriptive field length |
+| weeklyTargetMax | integer | 100 | Maximum target per format |
+| maxWeeklyOverrides | integer | 26 | Saved week override limit |
+| maxAvailabilityWindows | integer | 28 | Windows per schedule |
+| maxSettingsBytes | integer | 8192 | Maximum serialized personal settings |
+| minutesPerDay | integer | 1440 | Wall-clock minute boundary |
+| daysPerWeek | integer | 7 | Monday-first schedule boundary |
+| platforms | string array | See JSON | Editable supported-platform catalog |
+| formats | string array | videos, shorts, posts | Output target catalog |
+| weekdays | string array | Monday through Sunday | Day-index labels |
+
+API: GET/PUT `/api/v1/preferences` uses the approved session's user ID.
+PUT `/api/v1/workspaces/{workspaceId}/brands/{brandId}/preferences` additionally
+requires workspace membership and brand scope. Writes take
+`{expectedRevision, settings}`; personal revision zero means create-only, brand
+writes require the brand's current revision. Stale writes return 409, invalid
+input 400, missing session 401, disallowed access 403 or non-enumerable brand 404.
+Do not automatically retry a stale save with an invented revision. Existing
+Origin and body-size checks apply; release-wide admission rate limiting remains
+part of hardening. Week-scoped overrides do not carry into another week.
+
+### Already-applied database baseline
+
+The user confirms `20261015000100_creator_preferences.sql` has already been run
+in Supabase. Its local file is the historical record of that exact schema,
+not a request to run it again. Do not recreate the table, policies or trigger.
+Future schema changes must use additive, later migrations and state their manual
+application steps. No hosted verification is required from this coding agent.
+
+### Working arrangement
+
+The coding agent must not run Git/GitHub commands or alter repository settings
+or branches. Work directly in the current folder and implement only the feature
+the user requests. Manual operations are reported briefly and handled by the user.

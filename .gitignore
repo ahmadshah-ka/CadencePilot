@@ -15,3 +15,8 @@ Agent Helper/
 context/
 test-results/
 playwright-report/
+AGENTS.md
+CLAUDE.md
+tests/
+feature-specs/
+context/

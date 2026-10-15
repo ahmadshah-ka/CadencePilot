@@ -2,7 +2,10 @@ import Link from "next/link";
 import { signOutAction } from "@/app/actions/auth-actions";
 import { buttonClasses } from "@/presentation/components/ui/button";
 import { PageHeader } from "@/presentation/components/ui/page-header";
-import { StateMessage } from "@/presentation/components/ui/state-message";
+import policy from "@/config/onboarding-policy.json";
+import { getPreferences } from "@/application/preferences/preference-use-cases";
+import { getContainer } from "@/infrastructure/composition";
+import { PersonalPreferenceForm } from "@/presentation/components/preferences/preference-form";
 import { requireApprovedPage } from "@/presentation/auth/page-guards";
 import { getShellScope } from "@/presentation/workspaces/shell-scope";
 
@@ -12,6 +15,10 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   const principal = await requireApprovedPage("/app/settings");
   const scope = await getShellScope();
+  const saved = await getPreferences(
+    { preferences: getContainer().preferences, policy },
+    principal,
+  );
   return (
     <div className="space-y-8">
       <PageHeader title="Settings" description="Your account and workspace." />
@@ -25,9 +32,10 @@ export default async function SettingsPage() {
           <dd>{scope.workspace ? scope.workspace.name : "Not created yet"}</dd>
         </div>
       </dl>
-      <StateMessage tone="unavailable" title="Preferences are not available yet">
-        Availability, timezone and goals are set during onboarding, which is still being built.
-      </StateMessage>
+      <PersonalPreferenceForm
+        initial={saved?.settings ?? { timezone: "", availability: [], weeklyAvailability: [] }}
+        initialRevision={saved?.revision ?? 0}
+      />
       <div className="flex flex-wrap gap-3">
         {principal.isOwner ? (
           <Link href="/admin" className={buttonClasses("secondary")}>

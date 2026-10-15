@@ -67,15 +67,23 @@ export default async function BrandsPage({
 
       {page.items.length === 0 ? (
         <StateMessage tone="empty" title="No brands yet">
-          Add your first brand below. You can use any name; audiences and goals come later in
-          onboarding.
+          Add your first brand below, then open its name to set its audience, platforms and goals.
         </StateMessage>
       ) : (
         <ul className="divide-y divide-line border-y border-line">
           {page.items.map((brand) => (
             <li key={brand.id} className="flex items-center justify-between gap-3 py-3">
               <span className={brand.archivedAt ? "text-muted line-through" : ""}>
-                {brand.name}
+                {brand.archivedAt ? (
+                  brand.name
+                ) : (
+                  <Link
+                    href={`/app/brands/${brand.id}/preferences`}
+                    className="underline underline-offset-4"
+                  >
+                    {brand.name}
+                  </Link>
+                )}
                 {brand.archivedAt ? <span className="sr-only"> (archived)</span> : null}
               </span>
               <form action={archiveBrandAction}>

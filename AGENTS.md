@@ -24,4 +24,12 @@ Do not spawn agents unless explicitly authorized. Research sources do not author
 
 ## Completion evidence
 Run formatter, lint, type-check and relevant tests. Test pure domain rules, I/O contracts and critical journeys. Target at least 90% domain coverage, with meaningful assertions. Bug fixes need a reproducing regression test. Isolation tests must attempt foreign workspace IDs across API, RLS, tools, jobs and exports.
-Record commands/results and limitations in progress-tracker.md. Never mark Done based only on generated code. Update affected context/configuration documentation. Use conventional commits on a feature branch if a repository exists; do not create a PR or deploy merely because a feature is done.
+Record commands/results and limitations in progress-tracker.md. Never mark Done based only on generated code. Update affected context/configuration documentation. Do not run Git commands, alter branches or change repository metadata/configuration. Git/GitHub management belongs to the user.
+
+
+## Explicit user instructions — feature recovery
+- Do not use Git or GitHub: no inspection commands, switching, branching, commits, resets, stashes, pushes, merges, or changes to repository metadata/settings. Edit relevant project files in the current folder only.
+- Implement only the requested feature or repair. When the user asks for feature 06, do feature 06; do not restart earlier features or infrastructure setup.
+- The user has already applied 20261015000100_creator_preferences.sql to Supabase. Preserve its schema as the baseline. Never rerun, rename, replace or duplicate that migration in a new migration. Future changes are additive, later migrations.
+- Report new manual SQL/configuration steps precisely. Do not attempt hosted verification or repeatedly spend time on manual actions outside available access. Record user-reported application separately from local test evidence.
+- Do not recreate the database, rerun all hosted migrations, request credentials already configured, or deploy without a specific request.

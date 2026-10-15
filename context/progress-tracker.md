@@ -1,5 +1,5 @@
 # Progress tracker
-Planning baseline finalised 2026-10-07. Feature 01 scaffold implemented 2026-10-08; features 02+ have no code. Local checks have run for implemented features; no hosted integration has been verified (see User-reported setup). Earlier draft superseded.
+Planning baseline finalised 2026-10-07. Features 01–04 are present; feature 05 restored in place on 2026-10-15 without Git operations. Local checks have run for implemented features; no hosted integration has been verified (see User-reported setup). Earlier draft superseded.
 
 | ID | Feature | Dependencies | Status | Evidence/blocker |
 |---|---|---|---|---|
@@ -7,7 +7,7 @@ Planning baseline finalised 2026-10-07. Feature 01 scaffold implemented 2026-10-
 | 02 | [Authentication and owner approval](../feature-specs/02-authentication-owner-approval.md) | 01 | Implemented-unverified | Local checks pass; hosted login/database not verified (see entry) |
 | 03 | [Workspaces and brand isolation](../feature-specs/03-workspaces-brand-isolation.md) | 02 | Implemented-unverified | Local checks pass; RLS verified on local PGlite only (see entry) |
 | 04 | [Public site and navigation](../feature-specs/04-public-site-navigation.md) | 03 | Implemented-unverified | Local + browser checks pass against a fake Supabase; hosted not verified (see entry) |
-| 05 | [Onboarding and preferences](../feature-specs/05-onboarding-preferences.md) | 04 | Not started | — |
+| 05 | [Onboarding and preferences](../feature-specs/05-onboarding-preferences.md) | 04 | Implemented; locally verified | 178 tests + 6 browser checks pass; migration already applied, user confirmed |
 | 06 | [Content and publication records](../feature-specs/06-content-publication-records.md) | 05 | Not started | — |
 | 07 | [AI adapters and budgets](../feature-specs/07-ai-adapters-budgets.md) | 03,06 | Not started | — |
 | 08 | [Brand assistant and memory](../feature-specs/08-brand-assistant-memory.md) | 05,07 | Not started | — |
@@ -20,9 +20,10 @@ Planning baseline finalised 2026-10-07. Feature 01 scaffold implemented 2026-10-
 | 15 | [Operations and release checks](../feature-specs/15-operations-release-checks.md) | 01,02,03,04,05,06,07,08,09,10,11,12,13,14 | Not started | — |
 
 ## Next task
-Verify 02–04 against the hosted project using docs/auth-and-database-setup.md (needs the user). Feature 05 (onboarding and preferences) is the next dependency-ready build.
-
-(Previous note: 02 Authentication and owner approval, dependency 01 met.) Next milestone is 01–03: running local scaffold, secure approved login and isolated workspace. Feature 05 finishes the deterministic form. Feature 08 adds its AI enhancement; there is no circular dependency.
+Feature 05 restoration and local verification are complete. Wait for the user's next
+explicit feature request; feature 06 is next in the implementation sequence.
+Do not restart account setup, rerun applied SQL, use Git, or attempt hosted
+verification. Any new manual step must be reported precisely and briefly.
 
 ## Completion entries
 ### 01 Project foundation — 2026-10-08
@@ -71,7 +72,52 @@ Not started / In progress / Blocked (state exact dependency) / Implemented-unver
 Feature ID; date; changed files; tested scenarios; commands and outcomes; security/isolation evidence; known limitations; config/context changes; next dependency-ready task.
 
 ## User-reported setup (not verified by the agent)
-Reported by the user on 2026-10-08, treated as unverified until tested: GitHub repository; hosted Supabase project; Vercel project with application and Supabase environment variables; Google OAuth configured in Supabase; Groq and Tavily credentials and budgets configured in Vercel. The agent has no access to these services from the development machine (no Supabase CLI, no database client, no `.env.local`), so migrations have **not** been applied to the hosted database and hosted login has **not** been exercised. Manual steps and the hosted verification checklist: [docs/auth-and-database-setup.md](../docs/auth-and-database-setup.md). Earlier notes saying accounts and credentials do not exist are superseded by this section.
+Reported by the user on 2026-10-08, treated as unverified until tested: GitHub repository; hosted Supabase project; Vercel project with application and Supabase environment variables; Google OAuth configured in Supabase; Groq and Tavily credentials and budgets configured in Vercel. The agent has no access to these services from the development machine (no Supabase CLI, no database client, no `.env.local`), historically hosted application was not verified by the agent. Superseding user update: the feature-05 creator_preferences migration is already applied. Do not infer pending migration status from these historical notes. Manual steps and the hosted verification checklist: [docs/auth-and-database-setup.md](../docs/auth-and-database-setup.md). Earlier notes saying accounts and credentials do not exist are superseded by this section.
 
 ## Decisions and implementation assumptions
 Product name, precise brand audiences, user timezone/capacity and permanent output targets are configurable inputs. Initial provider choices: Supabase, Groq, Tavily; Vercel at deployment; Resend optional. Accounts were created by the user outside this pack (see User-reported setup). First-release team invitations/billing/autopublishing deferred. Performance figures are proposed targets awaiting a documented benchmark. No unsupported best-in-industry research marketing claim.
+
+
+## Current user instructions and migration baseline — 2026-10-15
+
+- No Git/GitHub commands, metadata changes, branch operations or repository configuration edits.
+- Restore feature 05 only in the current folder. Future requests are feature-scoped.
+- creator_preferences SQL pasted by the user is already applied to Supabase.
+- Keep the local migration under its original filename as history. Never reapply,
+  replace or duplicate it. All future migrations are additive and later.
+- New manual SQL or configuration work is reported to the user; do not spend
+  time trying to verify inaccessible hosted services. User confirmation and
+  local automated test evidence remain distinct.
+- No manual action is needed for this restoration; no SQL was executed remotely.
+- No new credentials or environment variables required.
+
+Local canonical migration SHA256: `5cf65bbc3d45311deb16a852929d29d1389fe1776a3c80bcd541a45fd1521bc0`.
+Scope: creator_preferences table, own-user approved-account RLS, explicit column
+grants, immutable owner, and revision/updated_at update trigger, matching the
+user's already-applied SQL. Existing feature 02/03 migrations remain intact.
+
+
+### Feature 05 restored in place — verification complete
+
+- Restored timezone/availability drafts, week-only overrides, brand questionnaire,
+  platform selection and permanent/weekly content targets, protected APIs and tests.
+- 178 tests passed across 20 files; coverage: 98.74% statements, 97.66% branches,
+  100% functions, 99.26% lines.
+- TypeScript, ESLint (zero warnings), and scoped Prettier checks passed.
+- Existing broad formatting differences in 110 unrelated source/test files were
+  not reformatted; only feature-related files were formatted.
+- Production build passed using `next build --webpack`; no attempt was made to
+  repeat the previously failing default compiler path during this restoration.
+- Browser tests: 6/6 passed on desktop, tablet and mobile, including accessibility,
+  save/resume and week-only overrides, against local fake services only.
+- Browser bundle scan: no configured test secret in 56 bundle files.
+- Backup comparison confirms no pre-existing working files removed, no dependency
+  changes and no modifications to feature-02/03 migrations.
+- No Git/GitHub commands, metadata/configuration edits, commits, branch operations,
+  pushes, merges, deployment or hosted SQL execution were performed.
+- The user-supplied feature-05 SQL is already applied; its local historical file
+  was restored without creating a new migration. No manual action is required.
+- Instructions updated in AGENTS.md and CLAUDE.md: user manages Git; future work
+  is limited to the requested feature, with precise new manual steps only.
+- Next feature: 06, only when explicitly requested. No hosted verification task
+  blocks or repeats the user's already-confirmed migration work.

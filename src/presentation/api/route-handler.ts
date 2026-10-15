@@ -31,7 +31,7 @@ export interface RouteDefinition<P extends AccessPolicy> {
 }
 
 export interface NextRouteContext {
-  params?: Promise<Record<string, string | string[] | undefined>>;
+  params: Promise<Record<string, string | string[] | undefined>>;
 }
 
 const STATUS_BY_CODE: Record<ErrorCode, number> = {
@@ -100,11 +100,18 @@ async function resolveParams(
  * @param getContainer Supplies dependencies per request (injected for tests).
  * @returns A Route Handler function.
  */
+// The final overload supplies Next.js with its required context type.
+// The first keeps one-argument unit calls valid without weakening runtime policies.
+export interface RouteHandler {
+  (request: Request): Promise<Response>;
+  (request: Request, routeContext: NextRouteContext): Promise<Response>;
+}
+
 export function createRouteHandler<P extends AccessPolicy>(
   definition: RouteDefinition<P>,
   getContainer: () => Container,
-): (request: Request, routeContext?: NextRouteContext) => Promise<Response> {
-  return async (request, routeContext) => {
+): RouteHandler {
+  return async (request: Request, routeContext?: NextRouteContext) => {
     // Never trust a caller-supplied trace ID: it would let clients forge log correlation.
     const traceId = crypto.randomUUID();
     let container: Container;
